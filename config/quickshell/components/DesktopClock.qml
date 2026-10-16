@@ -97,6 +97,10 @@ Item {
         var d = sysClock.date.getDay();
         return root.clockLang === "es" ? daysES[d] : daysEN[d];
     }
+    
+    readonly property string secondsStr: {
+       return String(sysClock.date.getSeconds()).padStart(2, '0');
+    }
 
     // Paletas de Color
     readonly property color bgColor: {
@@ -116,6 +120,12 @@ Item {
     readonly property color digitsColor: {
         if (root.clockTheme === "pywal" && root.theme && root.theme.pywalLoaded) return root.theme.accent;
         if (root.clockTheme === "cyberpunk") return "#00ffcc";
+        if (root.clockTheme === "cream") return "#4a4036";
+        return "#F9B49E"; // Melocotón cálido exacto a la imagen
+    }
+    readonly property color secondsColor: {
+        if (root.clockTheme === "pywal" && root.theme && root.theme.pywalLoaded) return root.theme.accent;
+        if (root.clockTheme === "cyberpunk") return "#ff0000";
         if (root.clockTheme === "cream") return "#4a4036";
         return "#F9B49E"; // Melocotón cálido exacto a la imagen
     }
@@ -284,6 +294,16 @@ Item {
                         font.bold: true
                         font.weight: Font.ExtraBold
                         color: root.digitsColor
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.secondsStr
+                        font.family: root.mainFont
+                        font.pixelSize: Math.round(22 * root.scaleFactor)
+                        font.bold: true
+                        font.weight: Font.ExtraBold
+                        color: root.secondsColor
                     }
                 }
 
@@ -472,7 +492,7 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Text {
-                        text: "Ajustes del Reloj de Escritorio"
+                        text: "Desktop Clock Settings"
                         font.family: root.mainFont
                         font.pixelSize: 10
                         font.bold: true
@@ -503,7 +523,7 @@ Item {
                     Layout.fillWidth: true
                     spacing: 4
                     Text {
-                        text: "Tema:"
+                        text: "Theme:"
                         font.pixelSize: 9
                         color: root.dayOfWeekColor
                         Layout.preferredWidth: 46
@@ -553,7 +573,7 @@ Item {
                     RowLayout {
                         spacing: 3
                         Text {
-                            text: "Idioma:"
+                            text: "Language:"
                             font.pixelSize: 9
                             color: root.dayOfWeekColor
                         }

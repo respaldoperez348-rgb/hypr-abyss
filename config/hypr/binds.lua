@@ -2,23 +2,24 @@ local mainMod = "SUPER"
 local home = os.getenv("HOME") or "/home/david-tineo"
 
 local terminal    = "kitty"
-local fileManager = "thunar"
+local fileManager = "dolphin"
 local menu        = "pkill rofi || rofi -show drun -show-icons"
-local toggleZen   = "zen-browser"
+local browser   = "microsoft-edge-stable"
 -- Aplicaciones y control de ventanas
-hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(terminal))
+hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(home .. "/.config/quickshell/scripts/music_control.sh quit; quickshell ipc call musicplayer close"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(toggleZen))
+-- Application launcher
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("hyprctl dispatch exit"))
+--hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("hyprctl dispatch exit"))
 hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | swappy -f -'))
-hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("zeditor"))
-
+hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("code"))
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("ryotunes"))
 
 -- Captura directa de toda la pantalla al portapapeles con Super + Print
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("grim - | wl-copy"))
@@ -31,13 +32,15 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.config/hypr/scripts/wallch
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("quickshell ipc call wallpaper toggle"))
 
 -- Atajo para abrir Centro de Control y Notificaciones (Super + N)
-hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("quickshell ipc call controlcenter toggle"))
+hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("quickshell ipc call controlcenter toggle"))
 
 -- Atajo para abrir Menú de Energía y Apagado (Super + P)
-hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("quickshell ipc call powermenu toggle"))
+hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("quickshell ipc call powermenu toggle"))
+-- Launch vscode
+hl.bind(mainMod .. " + ", hl.dsp.exec_cmd("code"))
 
 -- Atajo para mostrar/ocultar Reloj de Escritorio (Super + B)
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("quickshell ipc call clock toggle"))
+hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd("quickshell ipc call clock toggle"))
 
 -- Atajo para Actualización Segura del Sistema (Super + U)
 hl.bind(mainMod .. " + U", hl.dsp.exec_cmd("kitty --class arch-updater --title 'Actualización del Sistema Arch Linux' -e " .. home .. "/.config/hypr/scripts/system_update.sh"))

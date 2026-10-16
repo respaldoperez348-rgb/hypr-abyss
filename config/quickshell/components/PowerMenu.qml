@@ -41,7 +41,7 @@ Item {
     readonly property var actions: [
         {
             id: "lock",
-            title: "Bloquear",
+            title: "Lock Screen",
             subtitle: "Lock Screen",
             key: "1",
             altKey: "L",
@@ -52,43 +52,43 @@ Item {
         },
         {
             id: "logout",
-            title: "Cerrar Sesión",
-            subtitle: "Exit Session",
+            title: "Logout Session",
+            subtitle: "Logout Session",
             key: "2",
             altKey: "E",
             color: root.theme ? root.theme.warning : "#ffb86c",
             iconType: "logout",
             needsConfirm: true,
-            confirmText: "Log out of Hyprland? / ¿Cerrar sesión?",
+            confirmText: "Log out of Hyprland?",
             command: [Quickshell.env("HOME") + "/.config/quickshell/scripts/logout.sh"]
         },
         {
             id: "reboot",
-            title: "Reiniciar",
+            title: "Restart",
             subtitle: "Reboot System",
             key: "3",
             altKey: "R",
             color: root.theme ? root.theme.accentAlt : "#bd93f9",
             iconType: "reboot",
             needsConfirm: true,
-            confirmText: "Reboot system now? / ¿Reiniciar?",
+            confirmText: "Reboot system now?",
             command: ["sh", "-c", "systemctl reboot 2>/dev/null || loginctl reboot 2>/dev/null || reboot"]
         },
         {
             id: "poweroff",
-            title: "Apagar",
+            title: "Shutdown",
             subtitle: "Power Off",
             key: "4",
             altKey: "P",
             color: root.theme ? root.theme.danger : "#ff5555",
             iconType: "power",
             needsConfirm: true,
-            confirmText: "Shut down system? / ¿Apagar?",
+            confirmText: "Shut down system?",
             command: ["sh", "-c", "systemctl poweroff 2>/dev/null || loginctl poweroff 2>/dev/null || poweroff"]
         },
         {
             id: "suspend",
-            title: "Suspender",
+            title: "Suspend",
             subtitle: "Suspend Mode",
             key: "5",
             altKey: "S",
@@ -280,7 +280,7 @@ Item {
                     }
 
                     Text {
-                        text: "SISTEMA // CONTROL DE ENERGÍA"
+                        text: "SYSTEM // ENERGY CONTROL"
                         font.family: root.theme ? root.theme.fontMono : "monospace"
                         font.pixelSize: 11
                         font.bold: true
@@ -695,7 +695,7 @@ Item {
                         width: 28; height: 16; radius: 4; color: Qt.rgba(1, 1, 1, 0.08)
                         Text { anchors.centerIn: parent; text: "1 - 5"; font.pixelSize: 8; font.bold: true; color: "#8b949e" }
                     }
-                    Text { text: "Acción directa"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Direct action"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 Row {
@@ -705,7 +705,7 @@ Item {
                         width: 24; height: 16; radius: 4; color: Qt.rgba(1, 1, 1, 0.08)
                         Text { anchors.centerIn: parent; text: "← →"; font.pixelSize: 8; font.bold: true; color: "#8b949e" }
                     }
-                    Text { text: "Navegar"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Browse"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 Row {
@@ -715,7 +715,7 @@ Item {
                         width: 28; height: 16; radius: 4; color: Qt.rgba(1, 1, 1, 0.08)
                         Text { anchors.centerIn: parent; text: "ENTER"; font.pixelSize: 8; font.bold: true; color: "#8b949e" }
                     }
-                    Text { text: "Ejecutar"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Execute"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 Row {
@@ -725,7 +725,7 @@ Item {
                         width: 24; height: 16; radius: 4; color: Qt.rgba(1, 1, 1, 0.08)
                         Text { anchors.centerIn: parent; text: "ESC"; font.pixelSize: 8; font.bold: true; color: "#8b949e" }
                     }
-                    Text { text: "Cancelar"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "Cancel"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
         }

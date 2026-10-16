@@ -16,7 +16,7 @@ hl.env("GTK_THEME", "adw-gtk3-dark")
 -- Input config
 hl.config({
     input = {
-        kb_layout = "latam",
+        kb_layout = "us",
         follow_mouse = 1,
         touchpad = {
             natural_scroll = true,
@@ -35,3 +35,4 @@ require("animations")
 require("binds")
 require("rules")
 require("autostart")
+require("user")

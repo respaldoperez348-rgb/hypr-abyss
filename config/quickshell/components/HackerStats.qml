@@ -3,15 +3,15 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * HackerStats.qml
- * Módulo de estado del sistema: CPU, WiFi, Bluetooth y Batería (Sin RAM).
- * Diseñado con componentes vectoriales nativos para garantizar nitidez total
- * en pantallas con escalado fraccional (1.5x) y sin depender de fuentes externas rotas.
- * 
- * Interacciones:
- * - Clic en WiFi: expande nombre de red (SSID); segundo clic lo contrae a estado normal.
- * - Clic en BT: expande nombre de dispositivo conectado; segundo clic lo contrae.
- * - Clic en Batería: expande estado detallado (Charging/Discharging); segundo clic lo contrae.
+- HackerStats.qml
+- Módulo de estado del sistema: CPU, WiFi, Bluetooth y Batería (Sin RAM).
+- Diseñado con componentes vectoriales nativos para garantizar nitidez total
+- en pantallas con escalado fraccional (1.5x) y sin depender de fuentes externas rotas.
+- 
+- Interacciones:
+- Clic en WiFi: expande nombre de red (SSID); segundo clic lo contrae a estado normal.
+- Clic en BT: expande nombre de dispositivo conectado; segundo clic lo contrae.
+- Clic en Batería: expande estado detallado (Charging/Discharging); segundo clic lo contrae.
  */
 Item {
     id: root
@@ -19,6 +19,7 @@ Item {
     property var theme
     property int cpu: 0
     property int bat: 100
+    property int gpu: 0
     property string batStatus: "Full"
     property string batTime: ""
     property string batDetail: ""
@@ -46,6 +47,7 @@ Item {
                 try {
                     var data = JSON.parse(this.text);
                     if (data.cpu !== undefined) root.cpu = data.cpu;
+                    if (data.gpu !== undefined) root.gpu = data.gpu;
                     if (data.bat !== undefined) root.bat = data.bat;
                     if (data.bat_status) root.batStatus = data.bat_status;
                     if (data.bat_time !== undefined) root.batTime = data.bat_time;
@@ -109,20 +111,23 @@ Item {
         spacing: 6
 
         // ==========================================
-        // 1. CPU (Texto nítido + punto neón)
+        // 1. CPU & GPU Core (Texto nítido + punto dinámico)
         // ==========================================
         Row {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 3
 
+            // --- CPU Indicator Dot ---
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 4
                 height: 4
                 radius: 2
-                color: root.cpu >= 80 
-                       ? (root.theme ? root.theme.danger : "#ff5555") 
-                       : (root.theme ? root.theme.accent : "#00ffcc")
+                color: root.cpu > 60 
+                       ? "#ff5555" // Red
+                       : (root.cpu < 40 
+                          ? "#50fa7b" // Green
+                          : "#f0f6fc") // White
             }
 
             Text {
@@ -140,7 +145,46 @@ Item {
                 font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                 font.pixelSize: 10
                 font.bold: true
-                color: root.theme ? root.theme.text : "#f0f6fc"
+                color: root.cpu > 60 
+                       ? "#ff5555" // Red
+                       : (root.cpu < 40 
+                          ? "#50fa7b" // Green
+                          : "#f0f6fc") // White
+            }
+
+            // --- GPU Indicator Dot ---
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 4
+                height: 4
+                radius: 2
+                color: root.gpu > 60 
+                       ? "#ff5555" // Red
+                       : (root.gpu < 40 
+                          ? "#50fa7b" // Green
+                          : "#f0f6fc") // White
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "GPU"
+                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                font.pixelSize: 9
+                font.bold: true
+                color: root.theme ? root.theme.textDim : "#6e7681"
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: (root.gpu < 10 ? "0" : "") + root.gpu + "%"
+                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                font.pixelSize: 10
+                font.bold: true
+                color: root.gpu > 60 
+                       ? "#ff5555" // Red
+                       : (root.gpu < 40 
+                          ? "#50fa7b" // Green
+                          : "#f0f6fc") // White
             }
         }
 
@@ -312,16 +356,13 @@ Item {
                     if (mouse.button === Qt.RightButton) {
                         openCcProc.running = true;
                     } else {
-                        // 1. Conmutar el estado en la interfaz de inmediato
                         root.bt = !root.bt;
                         if (!root.bt) {
                             root.btDevice = "";
                         }
-                        // 2. Mostrar la etiqueta con el nuevo estado (ON / OFF)
                         root.showBtName = true;
                         btFeedbackTimer.restart();
 
-                        // 3. Ejecutar bluetoothctl power on/off mediante el script
                         if (!btToggleProc.running) {
                             btToggleProc.running = true;
                         }
@@ -352,7 +393,6 @@ Item {
                     opacity: root.bt ? 1.0 : 0.4
                 }
 
-                // Contenedor animado del dispositivo o estado BT
                 Item {
                     id: btDetailContainer
                     visible: width > 0
@@ -441,7 +481,6 @@ Item {
                 anchors.centerIn: parent
                 spacing: 4
 
-                // Chasis vectorial de la batería
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 1
@@ -482,7 +521,6 @@ Item {
                     }
                 }
 
-                // Porcentaje
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: (root.batStatus === "Charging" ? "⚡" : "") + root.bat + "%"
@@ -492,7 +530,6 @@ Item {
                     color: root.theme ? root.theme.text : "#f0f6fc"
                 }
 
-                // Contenedor animado de estado de batería (Charging / Discharging)
                 Item {
                     id: batDetailContainer
                     visible: width > 0

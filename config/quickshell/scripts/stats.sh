@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Hacker Stats Provider for Quickshell Dynamic Island
-# Extrae CPU, Batería, WiFi y Bluetooth con latencia < 3ms
+# Extrae CPU, Batería, WiFi, Bluetooth y GPU con latencia < 3ms
 # ==============================================================================
 
 # 1. CPU
@@ -77,7 +77,6 @@ if [[ -n "$bat_path" ]]; then
     elif [[ "$bat_status" == "Charging" ]]; then
         bat_detail="Cargando"
     elif [[ "$bat_status" == "Discharging" ]]; then
-        # Fallback a upower si power_now no estuviera disponible
         up_time=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 2>/dev/null | awk -F: '/time to empty/ {gsub(/^[ \t]+/, "", $2); print $2; exit}')
         if [[ -n "$up_time" ]]; then
             bat_detail="${up_time} restantes"
@@ -90,12 +89,13 @@ fi
 # 3. WiFi (Lectura directa de /proc/net/wireless y /sys/class/net)
 wifi_signal=0
 wifi_ssid="Disconnected"
-if grep -q "wlp" /proc/net/wireless 2>/dev/null; then
-    raw_sig=$(awk '/wlp/ {gsub(/\./, ""); print int($3)}' /proc/net/wireless 2>/dev/null)
+if grep -qE "wlp|wlan" /proc/net/wireless 2>/dev/null; then
+    raw_sig=$(awk '/wlp|wlan/ {gsub(/\./, ""); print int($3)}' /proc/net/wireless 2>/dev/null)
     wifi_signal=$(( raw_sig > 100 ? 100 : raw_sig ))
+    
     wifi_ssid=$(iwgetid -r 2>/dev/null)
     if [[ -z "$wifi_ssid" ]]; then
-        wifi_ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | awk -F: '/^yes:/ || /^sí:/ {print $2; exit}')
+        wifi_ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | awk -F: '/^(yes|sí|true):/ {print $2; exit}')
     fi
     wifi_ssid=${wifi_ssid:-"Connected"}
 fi
@@ -108,6 +108,44 @@ fi
 bt_device=$(bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3-)
 bt_device=${bt_device:-""}
 
-# Salida JSON limpia
-printf '{"cpu": %d, "bat": %d, "bat_status": "%s", "bat_time": "%s", "bat_detail": "%s", "wifi_ssid": "%s", "wifi_signal": %d, "bt": %s, "bt_device": "%s"}\n' \
-  "$cpu_pct" "$bat_pct" "$bat_status" "$bat_time" "$bat_detail" "$wifi_ssid" "$wifi_signal" "$bt_powered" "$bt_device"
+# 5. Intel GPU (Calculado vía RC6 Residency Engine - card1)
+gpu_pct=0
+GPU_CACHE="/dev/shm/qs_gpu_cache"
+RC6_FILE="/sys/class/drm/card1/device/drm/card1/gt/gt0/rc6_residency_ms"
+
+if [[ -f "$RC6_FILE" ]]; then
+    # Obtener tiempo de residencia e idilio actual en milisegundos de alta precisión
+    read -r current_rc6 < "$RC6_FILE"
+    current_time=$(date +%s%3N) # Epoch en milisegundos
+
+    if [[ -f "$GPU_CACHE" ]]; then
+        read -r prev_time prev_rc6 < "$GPU_CACHE"
+        
+        time_diff=$(( current_time - prev_time ))
+        rc6_diff=$(( current_rc6 - prev_rc6 ))
+        
+        if (( time_diff > 0 )); then
+            # El uso de la GPU es el tiempo total transcurrido MENOS el tiempo que pasó inactiva (RC6)
+            idle_pct=$(( (100 * rc6_diff) / time_diff ))
+            gpu_pct=$(( 100 - idle_pct ))
+            
+            # Limitar cotas por desbordamiento de hilos
+            (( gpu_pct < 0 )) && gpu_pct=0
+            (( gpu_pct > 100 )) && gpu_pct=100
+        fi
+    fi
+    echo "$current_time $current_rc6" > "$GPU_CACHE"
+fi
+
+# Salida JSON limpia consolidada
+printf '{"cpu": %d, "bat": %d, "bat_status": "%s", "bat_time": "%s", "bat_detail": "%s", "wifi_ssid": "%s", "wifi_signal": %d, "bt": %s, "bt_device": "%s", "gpu": %d}\n' \
+  "$cpu_pct" \
+  "$bat_pct" \
+  "$bat_status" \
+  "$bat_time" \
+  "$bat_detail" \
+  "$wifi_ssid" \
+  "$wifi_signal" \
+  "$bt_powered" \
+  "$bt_device" \
+  "$gpu_pct"
