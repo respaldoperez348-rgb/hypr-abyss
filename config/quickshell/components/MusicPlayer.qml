@@ -960,9 +960,12 @@ Item {
 
                             Image {
                                 anchors.fill: parent
-                                source: root.currentCover
+                                source: (root.isOpen && root.currentCover) ? root.currentCover : ""
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
+                                onStatusChanged: {
+                                    if (status === Image.Error) source = ""
+                                }
                             }
 
                             // Badge Superior Izquierda
@@ -1814,9 +1817,12 @@ Item {
 
                                                 Image {
                                                     anchors.fill: parent
-                                                    source: modelData.thumbnail
+                                                    source: (root.isOpen && modelData.thumbnail) ? modelData.thumbnail : ""
                                                     fillMode: Image.PreserveAspectCrop
                                                     asynchronous: true
+                                                    onStatusChanged: {
+                                                        if (status === Image.Error) source = ""
+                                                    }
                                                 }
                                             }
 

@@ -78,7 +78,6 @@ ShellRoot {
 
     IpcHandler {
         target: "musicplayer"
-        property bool isOpen: root.musicPlayerOpen
 
         function toggle(): void {
             root.musicPlayerOpen = !root.musicPlayerOpen;
@@ -333,12 +332,16 @@ ShellRoot {
             visible: root.powerMenuOpen
 
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: root.powerMenuOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: root.powerMenuOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
             color: "transparent"
 
+            mask: Region {
+                item: root.powerMenuOpen ? powerMenuContainer.card : null
+            }
+
             BackgroundEffect.blurRegion: Region {
-                item: powerMenuContainer.card
+                item: root.powerMenuOpen ? powerMenuContainer.card : null
             }
 
             PowerMenu {
@@ -412,24 +415,28 @@ ShellRoot {
             visible: root.musicPlayerOpen
 
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: root.musicPlayerOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            WlrLayershell.keyboardFocus: root.musicPlayerOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
             color: "transparent"
 
             mask: Region {
-                item: musicPlayerContainer.card
+                item: (root.musicPlayerOpen && musicPlayerLoader.item) ? musicPlayerLoader.item.card : null
             }
 
             BackgroundEffect.blurRegion: Region {
-                item: musicPlayerContainer.card
+                item: (root.musicPlayerOpen && musicPlayerLoader.item) ? musicPlayerLoader.item.card : null
             }
 
-            MusicPlayer {
-                id: musicPlayerContainer
-                theme: globalTheme
-                isOpen: root.musicPlayerOpen
+            Loader {
+                id: musicPlayerLoader
                 anchors.fill: parent
-                onCloseRequested: root.musicPlayerOpen = false
+                active: root.musicPlayerOpen
+                sourceComponent: MusicPlayer {
+                    theme: globalTheme
+                    isOpen: root.musicPlayerOpen
+                    anchors.fill: parent
+                    onCloseRequested: root.musicPlayerOpen = false
+                }
             }
         }
     }
