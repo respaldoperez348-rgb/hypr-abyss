@@ -19,16 +19,19 @@ start_mpv() {
     rm -f "$SOCK"
     pkill -9 -f "$SOCK" 2>/dev/null
     
-    local script_arg=()
+    local script_args=()
     if [ -n "$MPRIS_SCRIPT" ]; then
-        script_arg=("--script=$MPRIS_SCRIPT")
+        script_args+=("--script=$MPRIS_SCRIPT")
+    fi
+    if [ -f "$HOME/.config/quickshell/scripts/mpv_next.lua" ]; then
+        script_args+=("--script=$HOME/.config/quickshell/scripts/mpv_next.lua")
     fi
 
     mpv --idle=yes \
         --no-video \
         --volume=80 \
         --input-ipc-server="$SOCK" \
-        "${script_arg[@]}" \
+        "${script_args[@]}" \
         --ytdl-format="bestaudio/best" \
         --title="Aura Music" \
         --really-quiet &

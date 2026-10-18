@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Mpris
 
 /**
@@ -18,6 +19,18 @@ Item {
     id: root
 
     property var theme
+
+    Process {
+        id: mediaNextProc
+        command: ["quickshell", "ipc", "call", "musicplayer", "next"]
+        running: false
+    }
+
+    Process {
+        id: mediaPrevProc
+        command: ["quickshell", "ipc", "call", "musicplayer", "prev"]
+        running: false
+    }
 
     property MprisPlayer activePlayer: null
 
@@ -329,6 +342,9 @@ Item {
                     onClicked: {
                         if (root.activePlayer && root.activePlayer.canGoPrevious) {
                             root.activePlayer.previous();
+                        } else {
+                            mediaPrevProc.running = false;
+                            mediaPrevProc.running = true;
                         }
                     }
                 }
@@ -392,6 +408,9 @@ Item {
                     onClicked: {
                         if (root.activePlayer && root.activePlayer.canGoNext) {
                             root.activePlayer.next();
+                        } else {
+                            mediaNextProc.running = false;
+                            mediaNextProc.running = true;
                         }
                     }
                 }

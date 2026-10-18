@@ -88,6 +88,18 @@ ShellRoot {
         function close(): void {
             root.musicPlayerOpen = false;
         }
+        function autoNext(): void {
+            if (musicPlayerContainer) musicPlayerContainer.autoNext();
+        }
+        function next(): void {
+            if (musicPlayerContainer) musicPlayerContainer.playNextSong(true);
+        }
+        function prev(): void {
+            if (musicPlayerContainer) musicPlayerContainer.playPreviousSong(true);
+        }
+        function togglePlay(): void {
+            if (musicPlayerContainer) musicPlayerContainer.togglePlay();
+        }
     }
 
     // Control de visibilidad del Reloj de Escritorio (Desktop Clock)
@@ -396,48 +408,38 @@ ShellRoot {
     // ==========================================
     // 7. Reproductor de Música Aura Music Flotante (Super + Y)
     // ==========================================
-    Variants {
-        id: musicPlayerVariants
-        model: Quickshell.screens
+    PanelWindow {
+        id: musicPlayerPanel
+        screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
 
-        PanelWindow {
-            id: musicPlayerPanel
-            property var modelData
-            screen: modelData
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
+        }
 
-            anchors {
-                top: true
-                bottom: true
-                left: true
-                right: true
-            }
+        visible: root.musicPlayerOpen
 
-            visible: root.musicPlayerOpen
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: root.musicPlayerOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: root.musicPlayerOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        color: "transparent"
 
-            color: "transparent"
+        mask: Region {
+            item: root.musicPlayerOpen ? musicPlayerContainer.card : null
+        }
 
-            mask: Region {
-                item: (root.musicPlayerOpen && musicPlayerLoader.item) ? musicPlayerLoader.item.card : null
-            }
+        BackgroundEffect.blurRegion: Region {
+            item: root.musicPlayerOpen ? musicPlayerContainer.card : null
+        }
 
-            BackgroundEffect.blurRegion: Region {
-                item: (root.musicPlayerOpen && musicPlayerLoader.item) ? musicPlayerLoader.item.card : null
-            }
-
-            Loader {
-                id: musicPlayerLoader
-                anchors.fill: parent
-                active: root.musicPlayerOpen
-                sourceComponent: MusicPlayer {
-                    theme: globalTheme
-                    isOpen: root.musicPlayerOpen
-                    anchors.fill: parent
-                    onCloseRequested: root.musicPlayerOpen = false
-                }
-            }
+        MusicPlayer {
+            id: musicPlayerContainer
+            theme: globalTheme
+            isOpen: root.musicPlayerOpen
+            anchors.fill: parent
+            onCloseRequested: root.musicPlayerOpen = false
         }
     }
 }

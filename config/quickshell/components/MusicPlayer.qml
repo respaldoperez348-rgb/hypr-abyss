@@ -161,8 +161,8 @@ Item {
                         root.isChangingSong = false;
                         changeDelayTimer.stop();
                     } else if (playerItem.modelData.playbackState === MprisPlaybackState.Stopped) {
-                        if (root.autoPlayMix && !root.isChangingSong && root.durationSeconds > 10 && root.currentSeconds >= root.durationSeconds - 3) {
-                            root.playNextSong();
+                        if (root.autoPlayMix && !root.isChangingSong && root.currentSeconds > 5) {
+                            root.playNextSong(false);
                         }
                     }
                 }
@@ -242,11 +242,6 @@ Item {
                 }
             } else {
                 root.currentSeconds++;
-            }
-
-            // Detección de fin de pista para reproducir la siguiente canción automáticamente
-            if (root.autoPlayMix && !root.isChangingSong && root.durationSeconds > 10 && root.currentSeconds >= root.durationSeconds - 2) {
-                root.playNextSong();
             }
         }
     }
@@ -394,12 +389,21 @@ Item {
 
     Timer {
         id: changeDelayTimer
-        interval: 10000
+        interval: 2500
         repeat: false
         onTriggered: root.isChangingSong = false
     }
 
-    function playSong(idx, playlistType) {
+    property double lastSongChangeTime: 0
+
+    function playSong(idx, playlistType, isManual) {
+        var now = Date.now();
+        var threshold = isManual ? 400 : 1500;
+        if (now - root.lastSongChangeTime < threshold) {
+            return;
+        }
+        root.lastSongChangeTime = now;
+
         if (playlistType !== undefined) {
             root.activePlaylistType = playlistType;
         }
@@ -424,18 +428,26 @@ Item {
         changeDelayTimer.restart();
     }
 
-    function playNextSong() {
+    function autoNext() {
+        if (root.autoPlayMix) {
+            root.playNextSong(false);
+        }
+    }
+
+    function playNextSong(isManual) {
         var list = root.currentPlayingList;
         if (!list || list.length === 0) return;
         var next = (root.currentSongIndex + 1) % list.length;
-        root.playSong(next);
+        if (next < 0 || isNaN(next)) next = 0;
+        root.playSong(next, undefined, isManual);
     }
 
-    function playPreviousSong() {
+    function playPreviousSong(isManual) {
         var list = root.currentPlayingList;
         if (!list || list.length === 0) return;
         var prev = (root.currentSongIndex - 1 + list.length) % list.length;
-        root.playSong(prev);
+        if (prev < 0 || isNaN(prev)) prev = 0;
+        root.playSong(prev, undefined, isManual);
     }
 
     function togglePlay() {
@@ -1310,7 +1322,7 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.playPreviousSong()
+                                    onClicked: root.playPreviousSong(true)
                                 }
                             }
 
@@ -1363,7 +1375,7 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.playNextSong()
+                                    onClicked: root.playNextSong(true)
                                 }
                             }
                         }
