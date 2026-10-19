@@ -54,6 +54,14 @@ Item {
 
     property bool micMuted: false
 
+    // Estados de Sliders de Volumen y Brillo
+    property int volumePercent: 65
+    property bool volumeMuted: false
+    property int brightnessPercent: 80
+
+    property alias card: panelCard
+    readonly property bool isAnimating: slideAnim.running
+
     // Temporizador de auto-cierre al salir el ratón
     Timer {
         id: autoCloseTimer
@@ -322,6 +330,53 @@ Item {
         onExited: micProc.running = true
     }
 
+    // 9. Sliders de Volumen y Brillo
+    Process {
+        id: slidersProc
+        command: [Quickshell.env("HOME") + "/.config/quickshell/scripts/sys_sliders.sh", "status"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var data = JSON.parse(this.text);
+                    if (data.volume !== undefined && !volSliderMouse.pressed) root.volumePercent = data.volume;
+                    if (data.muted !== undefined) root.volumeMuted = !!data.muted;
+                    if (data.brightness !== undefined && !briSliderMouse.pressed) root.brightnessPercent = data.brightness;
+                } catch (e) {}
+            }
+        }
+    }
+
+    Process {
+        id: slidersActionProc
+        command: []
+        running: false
+    }
+
+    function setSystemVolume(pct) {
+        var clamped = Math.max(0, Math.min(100, Math.round(pct)));
+        root.volumePercent = clamped;
+        root.volumeMuted = false;
+        slidersActionProc.running = false;
+        slidersActionProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/sys_sliders.sh", "set_volume", clamped.toString()];
+        slidersActionProc.running = true;
+    }
+
+    function toggleSystemMute() {
+        root.volumeMuted = !root.volumeMuted;
+        slidersActionProc.running = false;
+        slidersActionProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/sys_sliders.sh", "toggle_mute"];
+        slidersActionProc.running = true;
+    }
+
+    function setSystemBrightness(pct) {
+        var clamped = Math.max(5, Math.min(100, Math.round(pct)));
+        root.brightnessPercent = clamped;
+        slidersActionProc.running = false;
+        slidersActionProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/sys_sliders.sh", "set_brightness", clamped.toString()];
+        slidersActionProc.running = true;
+    }
+
     function refreshAll() {
         if (!notifProc.running) notifProc.running = true;
         if (!keepAwakeProc.running) keepAwakeProc.running = true;
@@ -329,6 +384,7 @@ Item {
         if (!wifiScanProc.running) wifiScanProc.running = true;
         if (!btScanProc.running) btScanProc.running = true;
         if (!micProc.running) micProc.running = true;
+        if (!slidersProc.running) slidersProc.running = true;
     }
 
     Timer {
@@ -376,7 +432,11 @@ Item {
         transform: Translate {
             x: root.isOpen ? 0 : 340
             Behavior on x {
-                NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+                NumberAnimation {
+                    id: slideAnim
+                    duration: 250
+                    easing.type: Easing.OutCubic
+                }
             }
         }
 
@@ -692,6 +752,233 @@ Item {
                                         elide: Text.ElideRight
                                         Layout.fillWidth: true
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ==========================================
+            // 1.5. SLIDERS DE VOLUMEN Y BRILLO (Estilo Prototipo Neón)
+            // ==========================================
+            Rectangle {
+                Layout.fillWidth: true
+                height: 84
+                radius: 12
+                color: Qt.rgba(0, 0, 0, 0.30)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.06)
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 6
+
+                    // --- Slider 1: Volumen ---
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            Text {
+                                text: "Volume"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 9
+                                font.bold: true
+                                color: "#ffffff"
+                            }
+
+                            Text {
+                                text: root.volumeMuted ? "(Muted)" : ("(" + root.volumePercent + "%)")
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 9
+                                color: root.volumeMuted
+                                       ? (root.theme ? root.theme.danger : "#ff5555")
+                                       : (root.theme ? root.theme.textDim : "#8b949e")
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            // Botón rápido Mute / Unmute
+                            Text {
+                                text: root.volumeMuted ? "Unmute" : "Mute"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 8
+                                font.bold: true
+                                color: muteBtnMouse.containsMouse
+                                       ? (root.theme ? root.theme.accent : "#00ffcc")
+                                       : (root.theme ? root.theme.textDim : "#6e7681")
+
+                                MouseArea {
+                                    id: muteBtnMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.toggleSystemMute()
+                                }
+                            }
+                        }
+
+                        Item {
+                            id: volTrackContainer
+                            Layout.fillWidth: true
+                            height: 14
+
+                            Rectangle {
+                                id: volTrack
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width
+                                height: 5
+                                radius: 2.5
+                                color: Qt.rgba(1, 1, 1, 0.12)
+
+                                Rectangle {
+                                    id: volFill
+                                    width: Math.max(0, Math.min(parent.width, parent.width * ((root.volumeMuted ? 0 : root.volumePercent) / 100.0)))
+                                    height: parent.height
+                                    radius: 2.5
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: root.theme ? root.theme.accent : "#00ffcc" }
+                                        GradientStop { position: 1.0; color: root.theme ? root.theme.accentAlt : "#bd93f9" }
+                                    }
+                                    Behavior on width {
+                                        enabled: !volSliderMouse.pressed
+                                        NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+                                    }
+                                }
+                            }
+
+                            // Círculo indicador (Thumb)
+                            Rectangle {
+                                width: volSliderMouse.containsMouse || volSliderMouse.pressed ? 13 : 11
+                                height: width
+                                radius: width / 2
+                                anchors.verticalCenter: parent.verticalCenter
+                                x: Math.max(0, Math.min(parent.width - width, volFill.width - width / 2))
+                                color: root.volumeMuted
+                                       ? (root.theme ? root.theme.danger : "#ff5555")
+                                       : (root.theme ? root.theme.accentAlt : "#bd93f9")
+                                border.width: 1.5
+                                border.color: "#ffffff"
+                                Behavior on width { NumberAnimation { duration: 100 } }
+                            }
+
+                            MouseArea {
+                                id: volSliderMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onPressed: (mouse) => {
+                                    var pct = (mouse.x / width) * 100.0;
+                                    root.setSystemVolume(pct);
+                                }
+                                onPositionChanged: (mouse) => {
+                                    if (pressed) {
+                                        var pct = (mouse.x / width) * 100.0;
+                                        root.setSystemVolume(pct);
+                                    }
+                                }
+                                onWheel: (wheel) => {
+                                    var step = wheel.angleDelta.y > 0 ? 5 : -5;
+                                    root.setSystemVolume(root.volumePercent + step);
+                                }
+                            }
+                        }
+                    }
+
+                    // --- Slider 2: Brillo ---
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            Text {
+                                text: "Brightness"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 9
+                                font.bold: true
+                                color: "#ffffff"
+                            }
+
+                            Text {
+                                text: "(" + root.brightnessPercent + "%)"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 9
+                                color: root.theme ? root.theme.textDim : "#8b949e"
+                            }
+
+                            Item { Layout.fillWidth: true }
+                        }
+
+                        Item {
+                            id: briTrackContainer
+                            Layout.fillWidth: true
+                            height: 14
+
+                            Rectangle {
+                                id: briTrack
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width
+                                height: 5
+                                radius: 2.5
+                                color: Qt.rgba(1, 1, 1, 0.12)
+
+                                Rectangle {
+                                    id: briFill
+                                    width: Math.max(0, Math.min(parent.width, parent.width * (root.brightnessPercent / 100.0)))
+                                    height: parent.height
+                                    radius: 2.5
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: root.theme ? root.theme.accent : "#00ffcc" }
+                                        GradientStop { position: 1.0; color: root.theme ? root.theme.accentAlt : "#bd93f9" }
+                                    }
+                                    Behavior on width {
+                                        enabled: !briSliderMouse.pressed
+                                        NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+                                    }
+                                }
+                            }
+
+                            // Círculo indicador (Thumb)
+                            Rectangle {
+                                width: briSliderMouse.containsMouse || briSliderMouse.pressed ? 13 : 11
+                                height: width
+                                radius: width / 2
+                                anchors.verticalCenter: parent.verticalCenter
+                                x: Math.max(0, Math.min(parent.width - width, briFill.width - width / 2))
+                                color: root.theme ? root.theme.accentAlt : "#bd93f9"
+                                border.width: 1.5
+                                border.color: "#ffffff"
+                                Behavior on width { NumberAnimation { duration: 100 } }
+                            }
+
+                            MouseArea {
+                                id: briSliderMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onPressed: (mouse) => {
+                                    var pct = (mouse.x / width) * 100.0;
+                                    root.setSystemBrightness(pct);
+                                }
+                                onPositionChanged: (mouse) => {
+                                    if (pressed) {
+                                        var pct = (mouse.x / width) * 100.0;
+                                        root.setSystemBrightness(pct);
+                                    }
+                                }
+                                onWheel: (wheel) => {
+                                    var step = wheel.angleDelta.y > 0 ? 5 : -5;
+                                    root.setSystemBrightness(root.brightnessPercent + step);
                                 }
                             }
                         }
@@ -1261,11 +1548,11 @@ Item {
             }
 
             // ==========================================
-            // 4. QUICK TOGGLES (Inferior con 6 Botones)
+            // 4. QUICK TOGGLES (Inferior con 6 Botones + Etiquetas)
             // ==========================================
             Rectangle {
                 Layout.fillWidth: true
-                height: 54
+                height: 66
                 radius: 12
                 color: Qt.rgba(0, 0, 0, 0.30)
                 border.width: 1
@@ -1274,7 +1561,7 @@ Item {
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 6
-                    spacing: 3
+                    spacing: 2
 
                     Text {
                         text: "Quick Toggles"
@@ -1580,6 +1867,24 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.shuffleWallpaper()
+                            }
+                        }
+                    }
+
+                    // Etiquetas bajo los 6 botones (como en el prototipo)
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+
+                        Repeater {
+                            model: ["WiFi", "BT", "Mic", "DND", "Shot", "Wall"]
+                            delegate: Text {
+                                Layout.fillWidth: true
+                                text: modelData
+                                horizontalAlignment: Text.AlignHCenter
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 7
+                                color: root.theme ? root.theme.textDim : "#8b949e"
                             }
                         }
                     }

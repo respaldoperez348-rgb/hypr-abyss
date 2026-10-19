@@ -104,11 +104,45 @@ Item {
 
     Component.onCompleted: root.updateActivePlayer()
 
-    readonly property bool hasMedia: activePlayer !== null && (activePlayer.trackTitle !== undefined && activePlayer.trackTitle.length > 0)
+    // Metadatos de respaldo en RAM de Aura Music (para carátula y artista en mpv)
+    property string auraTitle: ""
+    property string auraArtist: ""
+    property string auraCover: ""
+
+    FileView {
+        id: auraMetaFile
+        path: "/dev/shm/aura_now_playing.json"
+        printErrors: false
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                var raw = auraMetaFile.text();
+                if (!raw || raw.trim() === "") return;
+                var d = JSON.parse(raw);
+                root.auraTitle = d.title || "";
+                root.auraArtist = d.artist || "";
+                root.auraCover = d.thumbnail || "";
+            } catch (e) {}
+        }
+    }
+
+    readonly property bool isMpvActive: activePlayer !== null && activePlayer.identity !== undefined && activePlayer.identity.indexOf("mpv") !== -1
+    readonly property bool hasMedia: activePlayer !== null && ((activePlayer.trackTitle !== undefined && activePlayer.trackTitle.length > 0) || (isMpvActive && auraTitle.length > 0))
     readonly property bool isPlaying: activePlayer ? (activePlayer.isPlaying || activePlayer.playbackState === MprisPlaybackState.Playing) : false
-    readonly property string title: activePlayer ? (activePlayer.trackTitle || "Música") : ""
-    readonly property string artist: activePlayer ? (activePlayer.trackArtist || "") : ""
-    readonly property string artUrl: activePlayer ? (activePlayer.trackArtUrl || "") : ""
+    readonly property string title: {
+        if (isMpvActive && auraTitle.length > 0) return auraTitle;
+        return activePlayer ? (activePlayer.trackTitle || "Aura Music") : "Aura Music";
+    }
+    readonly property string artist: {
+        if (isMpvActive && auraArtist.length > 0) return auraArtist;
+        return activePlayer ? (activePlayer.trackArtist || "") : "";
+    }
+    readonly property string artUrl: {
+        if (activePlayer && activePlayer.trackArtUrl && activePlayer.trackArtUrl.length > 0) return activePlayer.trackArtUrl;
+        if (isMpvActive && auraCover.length > 0) return auraCover;
+        return "";
+    }
 
     // Control de visibilidad con tiempo de gracia al pausar
     property bool keepVisiblePaused: false
@@ -146,20 +180,19 @@ Item {
         }
     }
 
-    readonly property bool shouldDisplay: hasMedia && (isPlaying || keepVisiblePaused || mediaHoverArea.containsMouse)
+    signal toggleMusicPlayerRequested()
+    readonly property bool isHovered: mediaHoverArea.containsMouse || eqLauncherMouse.containsMouse || titleMouse.containsMouse || prevMouse.containsMouse || playMouse.containsMouse || nextMouse.containsMouse
+    readonly property bool shouldDisplay: hasMedia && (isPlaying || keepVisiblePaused)
 
     implicitHeight: 24
-    implicitWidth: shouldDisplay ? (contentRow.implicitWidth + 8) : 0
+    implicitWidth: shouldDisplay ? (contentRow.implicitWidth + 8) : 26
     width: implicitWidth
-    visible: implicitWidth > 0
-    opacity: shouldDisplay ? 1.0 : 0.0
+    visible: true
+    opacity: 1.0
     clip: true
 
     Behavior on implicitWidth {
         NumberAnimation { duration: 320; easing.type: Easing.OutQuad }
-    }
-    Behavior on opacity {
-        NumberAnimation { duration: 220; easing.type: Easing.OutQuad }
     }
 
     // ==========================================
@@ -175,10 +208,15 @@ Item {
             property int delay: 0
 
             width: 2.5
-            height: root.isPlaying ? minH : 3
+            height: root.isPlaying ? minH : (eqLauncherMouse.containsMouse ? 9 : 4)
             radius: 1.2
-            color: root.theme ? root.theme.accent : "#00ffcc"
+            color: eqLauncherMouse.containsMouse
+                   ? (root.theme ? root.theme.mediaColor : "#ff79c6")
+                   : (root.theme ? root.theme.accent : "#00ffcc")
             anchors.verticalCenter: parent.verticalCenter
+
+            Behavior on height { NumberAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: 150 } }
 
             SequentialAnimation {
                 running: root.isPlaying
@@ -216,12 +254,14 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 7
 
-        // 1. Ecualizador de Audio Neón (4 Barras)
-        Item {
-            implicitWidth: 14
-            width: 14
-            implicitHeight: 16
-            height: 16
+        // 1. Ecualizador de Audio Neón (4 Barras) — Clic abre Aura Music siempre
+        Rectangle {
+            implicitWidth: 20
+            width: 20
+            implicitHeight: 20
+            height: 20
+            radius: 10
+            color: eqLauncherMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
             anchors.verticalCenter: parent.verticalCenter
 
             Row {
@@ -245,11 +285,19 @@ Item {
                     onLoaded: { item.minH = 2; item.maxH = 9; item.animDuration = 280; item.delay = 40; }
                 }
             }
+
+            MouseArea {
+                id: eqLauncherMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.toggleMusicPlayerRequested()
+            }
         }
 
-        // 2. Carátula del Álbum (si existe)
+        // 2. Carátula del Álbum (si está expandido y existe)
         Rectangle {
-            visible: root.artUrl.length > 0
+            visible: root.shouldDisplay && root.artUrl.length > 0
             implicitWidth: visible ? 18 : 0
             width: implicitWidth
             implicitHeight: 18
@@ -269,8 +317,9 @@ Item {
 
         // 3. Título de Pista y Artista
         Item {
+            visible: root.shouldDisplay
             anchors.verticalCenter: parent.verticalCenter
-            implicitWidth: textCol.implicitWidth
+            implicitWidth: visible ? textCol.implicitWidth : 0
             width: implicitWidth
             implicitHeight: textCol.implicitHeight
             height: implicitHeight
@@ -302,13 +351,20 @@ Item {
                 }
             }
 
-            // Clic para traer la ventana del reproductor al frente
+            // Clic para abrir Aura Music o traer la ventana del reproductor al frente
             MouseArea {
+                id: titleMouse
                 anchors.fill: parent
+                hoverEnabled: true
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    if (root.activePlayer && root.activePlayer.canControl) {
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.RightButton || (root.activePlayer && root.activePlayer.identity && root.activePlayer.identity.indexOf("mpv") !== -1)) {
+                        root.toggleMusicPlayerRequested();
+                    } else if (root.activePlayer && root.activePlayer.canControl) {
                         root.activePlayer.raise();
+                    } else {
+                        root.toggleMusicPlayerRequested();
                     }
                 }
             }
@@ -316,6 +372,7 @@ Item {
 
         // 4. Botones de Control [⏮ ⏸/▶ ⏭]
         Row {
+            visible: root.shouldDisplay
             anchors.verticalCenter: parent.verticalCenter
             spacing: 4
 

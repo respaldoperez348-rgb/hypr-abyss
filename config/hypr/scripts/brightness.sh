@@ -25,10 +25,16 @@ get_icon() {
     fi
 }
 
-# Lanzar notificación OSD
+# Lanzar notificación OSD unificada en la Dynamic Island (sin duplicar con notify-send/Dunst)
 notify_user() {
     local current
     current=$(get_backlight)
+
+    if pgrep -x quickshell >/dev/null 2>&1; then
+        quickshell ipc call osd trigger "brightness" "$current" "false" >/dev/null 2>&1 &
+        return 0
+    fi
+
     local icon
     icon=$(get_icon)
 

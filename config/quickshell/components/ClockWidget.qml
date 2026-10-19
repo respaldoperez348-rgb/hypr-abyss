@@ -14,6 +14,7 @@ Item {
 
     property var theme
     property bool showDate: false
+    signal toggleControlCenterRequested()
 
     implicitHeight: 20
     implicitWidth: clockPill.width
@@ -65,9 +66,14 @@ Item {
             id: clockMouse
             anchors.fill: parent
             hoverEnabled: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                root.showDate = !root.showDate;
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton) {
+                    root.toggleControlCenterRequested();
+                } else {
+                    root.showDate = !root.showDate;
+                }
             }
         }
 

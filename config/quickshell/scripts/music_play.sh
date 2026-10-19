@@ -1,7 +1,11 @@
 #!/bin/bash
 URL="$1"
 TITLE="$2"
+ARTIST="$3"
+THUMB="$4"
 SOCK="/tmp/kiss_music_mpv.sock"
+STATE_FILE="/dev/shm/aura_now_playing.json"
+
 MPRIS_SCRIPT=""
 if [ -f "$HOME/.config/mpv/scripts/mpris.so" ]; then
     MPRIS_SCRIPT="$HOME/.config/mpv/scripts/mpris.so"
@@ -15,10 +19,23 @@ if [ -z "$URL" ]; then
     exit 0
 fi
 
+# Guardar metadatos actuales en RAM para sincronización instantánea con Dynamic Island
+python3 -c '
+import json, sys
+data = {
+    "url": sys.argv[1],
+    "title": sys.argv[2],
+    "artist": sys.argv[3],
+    "thumbnail": sys.argv[4]
+}
+with open(sys.argv[5], "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False)
+' "$URL" "${TITLE:-Música}" "${ARTIST:-Aura Music}" "${THUMB:-}" "$STATE_FILE" 2>/dev/null
+
 start_mpv() {
     rm -f "$SOCK"
     pkill -9 -f "$SOCK" 2>/dev/null
-    
+
     local script_args=()
     if [ -n "$MPRIS_SCRIPT" ]; then
         script_args+=("--script=$MPRIS_SCRIPT")
@@ -35,7 +52,7 @@ start_mpv() {
         --ytdl-format="bestaudio/best" \
         --title="Aura Music" \
         --really-quiet &
-    
+
     for i in {1..30}; do
         if [ -S "$SOCK" ]; then
             break
@@ -68,12 +85,10 @@ s.close()
 ' "$SOCK" "$URL" "$TITLE"
 }
 
-# Iniciar mpv si no está en ejecución o el socket no existe
 if [ ! -S "$SOCK" ] || ! pgrep -f "$SOCK" > /dev/null; then
     start_mpv
 fi
 
-# Enviar comando a mpv con confirmación; si falla, reiniciar mpv y reintentar
 if ! send_to_mpv 2>/dev/null; then
     start_mpv
     send_to_mpv 2>/dev/null

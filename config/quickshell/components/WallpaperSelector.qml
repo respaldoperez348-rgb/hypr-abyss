@@ -18,6 +18,8 @@ Item {
     property var theme
     property bool isOpen: false
     signal closeRequested()
+    property alias card: panelCard
+    readonly property bool isAnimating: slideYAnim.running
 
     implicitWidth: 880
     implicitHeight: 240
@@ -142,7 +144,11 @@ Item {
         // Desplazamiento animado de subida / bajada con aceleración suave
         y: root.isOpen ? 0 : root.height
         Behavior on y {
-            NumberAnimation { duration: 280; easing.type: Easing.OutCubic }
+            NumberAnimation {
+                id: slideYAnim
+                duration: 280
+                easing.type: Easing.OutCubic
+            }
         }
 
         // Resplandor neón superior sutil

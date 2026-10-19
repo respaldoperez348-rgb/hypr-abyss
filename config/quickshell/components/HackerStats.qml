@@ -27,6 +27,16 @@ Item {
     property bool bt: false
     property string btDevice: ""
 
+    // Propiedades sincronizadas para OSD y ventana activa
+    property int volume: -1
+    property bool volMuted: false
+    property int brightness: -1
+    property string activeApp: "Desktop"
+    property bool initialLoadDone: false
+
+    signal osdTriggered(string osdType, int osdValue, bool osdMuted)
+    signal openControlCenterRequested()
+
     // Estados de expansión por clic
     property bool showWifiName: false
     property bool showBtName: false
@@ -35,7 +45,7 @@ Item {
     implicitHeight: 20
     implicitWidth: statsRow.implicitWidth
 
-    // Proceso que ejecuta scripts/stats.sh cada 3 segundos
+    // Proceso que ejecuta scripts/stats.sh
     Process {
         id: statsProc
         command: [Quickshell.env("HOME") + "/.config/quickshell/scripts/stats.sh"]
@@ -53,7 +63,28 @@ Item {
                     if (data.wifi_ssid) root.wifiSsid = data.wifi_ssid;
                     if (data.wifi_signal !== undefined) root.wifiSignal = data.wifi_signal;
                     if (data.bt !== undefined) root.bt = data.bt;
-                    if (data.bt_device) root.btDevice = data.bt_device;
+                    if (data.bt_device !== undefined) root.btDevice = data.bt_device;
+                    if (data.active_app) root.activeApp = data.active_app;
+
+                    if (data.volume !== undefined) {
+                        var newVol = data.volume;
+                        var newMuted = !!data.vol_muted;
+                        if (root.initialLoadDone && (newVol !== root.volume || newMuted !== root.volMuted)) {
+                            root.osdTriggered("volume", newVol, newMuted);
+                        }
+                        root.volume = newVol;
+                        root.volMuted = newMuted;
+                    }
+
+                    if (data.brightness !== undefined) {
+                        var newBri = data.brightness;
+                        if (root.initialLoadDone && newBri !== root.brightness) {
+                            root.osdTriggered("brightness", newBri, false);
+                        }
+                        root.brightness = newBri;
+                    }
+
+                    root.initialLoadDone = true;
                 } catch (e) {
                     // Ignora streams incompletos
                 }
@@ -73,13 +104,6 @@ Item {
         }
     }
 
-    // Proceso para abrir el Centro de Control
-    Process {
-        id: openCcProc
-        command: ["quickshell", "ipc", "call", "controlcenter", "open"]
-        running: false
-    }
-
     // Temporizador para contraer suavemente el estado tras mostrar feedback
     Timer {
         id: btFeedbackTimer
@@ -92,7 +116,7 @@ Item {
 
     Timer {
         id: updateTimer
-        interval: 3000
+        interval: 1500
         repeat: true
         running: true
         triggeredOnStart: true
@@ -189,9 +213,14 @@ Item {
                 id: wifiMouse
                 anchors.fill: parent
                 hoverEnabled: true
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    root.showWifiName = !root.showWifiName;
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.RightButton) {
+                        root.openControlCenterRequested();
+                    } else {
+                        root.showWifiName = !root.showWifiName;
+                    }
                 }
             }
 
@@ -310,7 +339,7 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: (mouse) => {
                     if (mouse.button === Qt.RightButton) {
-                        openCcProc.running = true;
+                        root.openControlCenterRequested();
                     } else {
                         // 1. Conmutar el estado en la interfaz de inmediato
                         root.bt = !root.bt;

@@ -22,6 +22,8 @@ def get_notifications():
             nid = item.get('id', {}).get('data', 0)
             appname = item.get('appname', {}).get('data', 'Sistema')
             summary = item.get('summary', {}).get('data', '')
+            if appname in ('Volume', 'Brightness') or summary.startswith(('Volume:', 'Brightness:')):
+                continue
             body = item.get('body', {}).get('data', '')
             icon = item.get('icon_path', {}).get('data', '')
             short_body = body.split('\n')[0] if body else ''

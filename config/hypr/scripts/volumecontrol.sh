@@ -66,14 +66,21 @@ get_icon() {
     fi
 }
 
-# Lanzar notificación OSD
+# Lanzar notificación OSD unificada en la Dynamic Island (sin duplicar con notify-send/Dunst)
 notify_user() {
-    local vol_status
-    vol_status=$(get_volume)
+    local muted_state
+    muted_state=$(is_muted)
+    local vol_val
+    vol_val=$(get_volume_num)
+
+    if pgrep -x quickshell >/dev/null 2>&1; then
+        quickshell ipc call osd trigger "volume" "$vol_val" "$muted_state" >/dev/null 2>&1 &
+        return 0
+    fi
+
     local icon
     icon=$(get_icon)
-
-    if [[ "$vol_status" == "Muted" ]]; then
+    if [[ "$muted_state" == "true" ]]; then
         notify-send -e \
             -a "Volume" \
             -h string:x-dunst-stack-tag:volume_notif \
@@ -84,8 +91,6 @@ notify_user() {
             -i "$icon" \
             "Volume: Muted"
     else
-        local vol_val
-        vol_val=$(get_volume_num)
         notify-send -e \
             -a "Volume" \
             -h string:x-dunst-stack-tag:volume_notif \

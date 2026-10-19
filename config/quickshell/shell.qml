@@ -119,8 +119,21 @@ ShellRoot {
         }
     }
 
+    // Señal e IPC para disparar el OSD de Volumen/Brillo en la Dynamic Island al instante
+    signal osdRequested(string mode, int val, bool muted)
+
+    IpcHandler {
+        target: "osd"
+
+        function trigger(mode: string, val: string, muted: string): void {
+            var numVal = parseInt(val);
+            if (isNaN(numVal)) numVal = 0;
+            root.osdRequested(mode, numVal, muted === "true");
+        }
+    }
+
     // ==========================================
-    // 1. Barra Flotante Superior (Dynamic Island)
+    // 1. Barra Flotante Superior (Dynamic Island 2.0 + Sub-Cápsula OSD)
     // ==========================================
     Variants {
         id: topBarVariants
@@ -145,9 +158,10 @@ ShellRoot {
             }
 
             // Se oculta automáticamente y libera el espacio exclusivo en pantalla completa
+            // implicitHeight de 76px permite mostrar la sub-cápsula OSD con fondo 100% transparente alrededor
             visible: !isFullscreen
-            implicitHeight: isFullscreen ? 0 : (island.implicitHeight + 8)
-            exclusiveZone: isFullscreen ? 0 : (island.implicitHeight + 4)
+            implicitHeight: isFullscreen ? 0 : 76
+            exclusiveZone: isFullscreen ? 0 : 34
 
             // Capa superior en Wayland
             WlrLayershell.layer: WlrLayer.Top
@@ -156,14 +170,21 @@ ShellRoot {
             // Fondo 100% transparente para lograr el efecto flotante
             color: "transparent"
 
-            // MÁSCARA DE CLIC
+            // MÁSCARA DE CLIC (solo la cápsula principal)
             mask: Region {
                 item: topPanel.isFullscreen ? null : island
             }
 
-            // Efecto de desenfoque de fondo Wayland nativo
+            // Efecto de desenfoque de fondo Wayland nativo (solo la cápsula superior de 30px, sin rectángulo alrededor del OSD)
             BackgroundEffect.blurRegion: Region {
                 item: topPanel.isFullscreen ? null : island
+            }
+
+            Connections {
+                target: root
+                function onOsdRequested(mode, val, muted) {
+                    island.showOsd(mode, val, muted);
+                }
             }
 
             // Cápsula Dynamic Island flotante y centrada
@@ -174,6 +195,9 @@ ShellRoot {
                 anchors.top: parent.top
                 anchors.topMargin: 4
                 anchors.horizontalCenter: parent.horizontalCenter
+
+                onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
+                onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
             }
         }
     }
@@ -224,7 +248,7 @@ ShellRoot {
     }
 
     // ==========================================
-    // 3. Centro de Control & Notificaciones Lateral (Super + N / Reloj)
+    // 3. Centro de Control & Notificaciones Lateral (Super + N / Clic Der en Reloj)
     // ==========================================
     Variants {
         id: controlCenterVariants
@@ -349,11 +373,11 @@ ShellRoot {
             color: "transparent"
 
             mask: Region {
-                item: root.powerMenuOpen ? powerMenuContainer.card : null
+                item: powerMenuContainer.card
             }
 
             BackgroundEffect.blurRegion: Region {
-                item: root.powerMenuOpen ? powerMenuContainer.card : null
+                item: powerMenuContainer.card
             }
 
             PowerMenu {
@@ -427,11 +451,11 @@ ShellRoot {
         color: "transparent"
 
         mask: Region {
-            item: root.musicPlayerOpen ? musicPlayerContainer.card : null
+            item: musicPlayerContainer.card
         }
 
         BackgroundEffect.blurRegion: Region {
-            item: root.musicPlayerOpen ? musicPlayerContainer.card : null
+            item: musicPlayerContainer.card
         }
 
         MusicPlayer {

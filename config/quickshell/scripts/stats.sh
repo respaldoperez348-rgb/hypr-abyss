@@ -108,6 +108,25 @@ fi
 bt_device=$(bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3-)
 bt_device=${bt_device:-""}
 
+# 5. Volumen y Brillo (para OSD reactivo en Dynamic Island)
+raw_vol=$(LC_ALL=C wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)
+vol_muted=false
+[[ "$raw_vol" == *"[MUTED]"* ]] && vol_muted=true
+vol_pct=$(echo "$raw_vol" | awk '{print int($2 * 100 + 0.5)}')
+vol_pct=${vol_pct:-50}
+
+bri_pct=80
+bl_dir=$(ls -d /sys/class/backlight/* 2>/dev/null | head -1)
+if [[ -n "$bl_dir" && -f "$bl_dir/brightness" && -f "$bl_dir/max_brightness" ]]; then
+    read -r cur_b < "$bl_dir/brightness"
+    read -r max_b < "$bl_dir/max_brightness"
+    (( max_b > 0 )) && bri_pct=$(( (cur_b * 100 + max_b / 2) / max_b ))
+fi
+
+# 6. Ventana activa (Hyprland)
+active_class=$(hyprctl activewindow -j 2>/dev/null | awk -F'"' '/"class":/ {print $4; exit}')
+active_class=${active_class:-"Desktop"}
+
 # Salida JSON limpia
-printf '{"cpu": %d, "bat": %d, "bat_status": "%s", "bat_time": "%s", "bat_detail": "%s", "wifi_ssid": "%s", "wifi_signal": %d, "bt": %s, "bt_device": "%s"}\n' \
-  "$cpu_pct" "$bat_pct" "$bat_status" "$bat_time" "$bat_detail" "$wifi_ssid" "$wifi_signal" "$bt_powered" "$bt_device"
+printf '{"cpu": %d, "bat": %d, "bat_status": "%s", "bat_time": "%s", "bat_detail": "%s", "wifi_ssid": "%s", "wifi_signal": %d, "bt": %s, "bt_device": "%s", "volume": %d, "vol_muted": %s, "brightness": %d, "active_app": "%s"}\n' \
+  "$cpu_pct" "$bat_pct" "$bat_status" "$bat_time" "$bat_detail" "$wifi_ssid" "$wifi_signal" "$bt_powered" "$bt_device" "$vol_pct" "$vol_muted" "$bri_pct" "$active_class"

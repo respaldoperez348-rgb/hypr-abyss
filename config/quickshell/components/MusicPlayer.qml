@@ -39,62 +39,83 @@ Item {
     property bool isSearching: false
     property int currentSongIndex: 0
     property int volumePercent: 80
+    property bool hasStartedPlayback: false
+    property bool shuffleMode: false
+    property bool repeatOneMode: false
 
-    // Canciones de Radio / Búsqueda (se preservan al cambiar de pestaña)
+    // Canciones iniciales con portadas oficiales reales
     property var radioResults: [
         {
             "id": "yKNxeF4KMsY",
             "title": "Yellow",
-            "artist": "Coldplay • Parachutes",
-            "duration": "04:29",
-            "durationSec": 269,
+            "artist": "Coldplay",
+            "duration": "04:33",
+            "durationSec": 273,
             "url": "https://www.youtube.com/watch?v=yKNxeF4KMsY",
-            "thumbnail": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80"
+            "thumbnail": "https://i.ytimg.com/vi/yKNxeF4KMsY/hqdefault.jpg"
         },
         {
             "id": "dvgZkm1xWPE",
             "title": "Viva La Vida",
-            "artist": "Coldplay • Death and All His Friends",
+            "artist": "Coldplay",
             "duration": "04:02",
             "durationSec": 242,
             "url": "https://www.youtube.com/watch?v=dvgZkm1xWPE",
-            "thumbnail": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80"
+            "thumbnail": "https://i.ytimg.com/vi/dvgZkm1xWPE/hqdefault.jpg"
         },
         {
             "id": "k4V3Mo61fJM",
             "title": "Fix You",
-            "artist": "Coldplay • X&Y",
+            "artist": "Coldplay",
             "duration": "04:55",
             "durationSec": 295,
             "url": "https://www.youtube.com/watch?v=k4V3Mo61fJM",
-            "thumbnail": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80"
-        },
-        {
-            "id": "VPRjCeoBqrI",
-            "title": "A Sky Full of Stars",
-            "artist": "Coldplay • Ghost Stories",
-            "duration": "04:28",
-            "durationSec": 268,
-            "url": "https://www.youtube.com/watch?v=VPRjCeoBqrI",
-            "thumbnail": "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=600&q=80"
-        },
-        {
-            "id": "1G4isv_Fylg",
-            "title": "Paradise",
-            "artist": "Coldplay • Mylo Xyloto",
-            "duration": "04:38",
-            "durationSec": 278,
-            "url": "https://www.youtube.com/watch?v=1G4isv_Fylg",
-            "thumbnail": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80"
+            "thumbnail": "https://i.ytimg.com/vi/k4V3Mo61fJM/hqdefault.jpg"
         },
         {
             "id": "RB-RcX5DS5A",
             "title": "The Scientist",
-            "artist": "Coldplay • A Rush of Blood to the Head",
-            "duration": "05:09",
-            "durationSec": 309,
+            "artist": "Coldplay",
+            "duration": "04:26",
+            "durationSec": 266,
             "url": "https://www.youtube.com/watch?v=RB-RcX5DS5A",
-            "thumbnail": "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80"
+            "thumbnail": "https://i.ytimg.com/vi/RB-RcX5DS5A/hqdefault.jpg"
+        },
+        {
+            "id": "VPRjCeoBqrI",
+            "title": "A Sky Full of Stars",
+            "artist": "Coldplay",
+            "duration": "04:28",
+            "durationSec": 268,
+            "url": "https://www.youtube.com/watch?v=VPRjCeoBqrI",
+            "thumbnail": "https://i.ytimg.com/vi/VPRjCeoBqrI/hqdefault.jpg"
+        },
+        {
+            "id": "1G4isv_Fylg",
+            "title": "Paradise",
+            "artist": "Coldplay",
+            "duration": "04:38",
+            "durationSec": 278,
+            "url": "https://www.youtube.com/watch?v=1G4isv_Fylg",
+            "thumbnail": "https://i.ytimg.com/vi/1G4isv_Fylg/hqdefault.jpg"
+        },
+        {
+            "id": "d020hcWA_Wg",
+            "title": "Clocks",
+            "artist": "Coldplay",
+            "duration": "04:16",
+            "durationSec": 256,
+            "url": "https://www.youtube.com/watch?v=d020hcWA_Wg",
+            "thumbnail": "https://i.ytimg.com/vi/d020hcWA_Wg/hqdefault.jpg"
+        },
+        {
+            "id": "llWhsWaPes4",
+            "title": "Somewhere Only We Know",
+            "artist": "Keane",
+            "duration": "03:55",
+            "durationSec": 235,
+            "url": "https://www.youtube.com/watch?v=llWhsWaPes4",
+            "thumbnail": "https://i.ytimg.com/vi/llWhsWaPes4/hqdefault.jpg"
         }
     ]
 
@@ -152,6 +173,7 @@ Item {
                     root.updateActivePlayer(); 
                     if (playerItem.modelData.isPlaying) {
                         root.isChangingSong = false;
+                        root.hasStartedPlayback = true;
                         changeDelayTimer.stop();
                     }
                 }
@@ -159,10 +181,11 @@ Item {
                     root.updateActivePlayer(); 
                     if (playerItem.modelData.playbackState === MprisPlaybackState.Playing) {
                         root.isChangingSong = false;
+                        root.hasStartedPlayback = true;
                         changeDelayTimer.stop();
                     } else if (playerItem.modelData.playbackState === MprisPlaybackState.Stopped) {
                         if (root.autoPlayMix && !root.isChangingSong && root.currentSeconds > 5) {
-                            root.playNextSong(false);
+                            root.autoNext();
                         }
                     }
                 }
@@ -193,29 +216,36 @@ Item {
         onTriggered: root.updateActivePlayer()
     }
 
+    readonly property bool isMpvPlayer: activePlayer !== null && activePlayer.identity !== undefined && activePlayer.identity.indexOf("mpv") !== -1
     readonly property bool isPlaying: activePlayer ? (activePlayer.isPlaying || activePlayer.playbackState === MprisPlaybackState.Playing) : false
     readonly property string currentTitle: {
-        if (activePlayer && activePlayer.trackTitle && activePlayer.trackTitle.length > 0) return activePlayer.trackTitle;
         var list = root.currentPlayingList;
-        if (list && list.length > currentSongIndex) return list[currentSongIndex].title;
+        if (isMpvPlayer && list && list.length > currentSongIndex && list[currentSongIndex]) {
+            return list[currentSongIndex].title;
+        }
+        if (activePlayer && activePlayer.trackTitle && activePlayer.trackTitle.length > 0) return activePlayer.trackTitle;
+        if (list && list.length > currentSongIndex && list[currentSongIndex]) return list[currentSongIndex].title;
         return "Yellow";
     }
     readonly property string currentArtist: {
-        if (activePlayer && activePlayer.trackArtist && activePlayer.trackArtist.length > 0) return activePlayer.trackArtist;
         var list = root.currentPlayingList;
-        if (list && list.length > currentSongIndex) return list[currentSongIndex].artist;
-        return "Coldplay • Parachutes";
+        if (isMpvPlayer && list && list.length > currentSongIndex && list[currentSongIndex]) {
+            return list[currentSongIndex].artist;
+        }
+        if (activePlayer && activePlayer.trackArtist && activePlayer.trackArtist.length > 0) return activePlayer.trackArtist;
+        if (list && list.length > currentSongIndex && list[currentSongIndex]) return list[currentSongIndex].artist;
+        return "Coldplay";
     }
     readonly property string currentCover: {
         if (activePlayer && activePlayer.trackArtUrl && activePlayer.trackArtUrl.length > 0) return activePlayer.trackArtUrl;
         var list = root.currentPlayingList;
-        if (list && list.length > currentSongIndex) return list[currentSongIndex].thumbnail;
-        return "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80";
+        if (list && list.length > currentSongIndex && list[currentSongIndex]) return list[currentSongIndex].thumbnail;
+        return "https://i.ytimg.com/vi/yKNxeF4KMsY/hqdefault.jpg";
     }
 
     // Estado reactivo de tiempo continuo y autoplay
     property int currentSeconds: 0
-    property int durationSeconds: 240
+    property int durationSeconds: 273
     property bool autoPlayMix: true
     property bool isChangingSong: false
 
@@ -228,7 +258,6 @@ Item {
         onTriggered: {
             if (activePlayer && activePlayer.position !== undefined) {
                 var pos = Math.floor(activePlayer.position);
-                // Si estamos cambiando de canción y mpv aún reporta posición residual vieja, mantener 0
                 if (root.isChangingSong && pos > 5) {
                     root.currentSeconds = 0;
                 } else if (!isNaN(pos) && pos >= 0) {
@@ -247,6 +276,7 @@ Item {
     }
 
     function formatTime(sec) {
+        if (isNaN(sec) || sec < 0) sec = 0;
         var m = Math.floor(sec / 60);
         var s = Math.floor(sec % 60);
         return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
@@ -398,7 +428,7 @@ Item {
 
     function playSong(idx, playlistType, isManual) {
         var now = Date.now();
-        var threshold = isManual ? 400 : 1500;
+        var threshold = isManual ? 350 : 1200;
         if (now - root.lastSongChangeTime < threshold) {
             return;
         }
@@ -410,6 +440,7 @@ Item {
         var list = root.currentPlayingList;
         if (!list || idx < 0 || idx >= list.length) return;
         root.isChangingSong = true;
+        root.hasStartedPlayback = true;
         root.currentSongIndex = idx;
         root.currentSeconds = 0;
         var s = list[idx];
@@ -421,15 +452,20 @@ Item {
         playProc.running = false;
         playProc.command = [
             Quickshell.env("HOME") + "/.config/quickshell/scripts/music_play.sh",
-            s.url,
-            (s.title || "Música") + " - " + (s.artist || "Aura")
+            s.url || "",
+            s.title || "Música",
+            s.artist || "Aura Music",
+            s.thumbnail || ""
         ];
         playProc.running = true;
         changeDelayTimer.restart();
     }
 
     function autoNext() {
-        if (root.autoPlayMix) {
+        if (root.repeatOneMode) {
+            root.lastSongChangeTime = 0;
+            root.playSong(root.currentSongIndex, undefined, false);
+        } else if (root.autoPlayMix) {
             root.playNextSong(false);
         }
     }
@@ -437,7 +473,14 @@ Item {
     function playNextSong(isManual) {
         var list = root.currentPlayingList;
         if (!list || list.length === 0) return;
-        var next = (root.currentSongIndex + 1) % list.length;
+        var next = 0;
+        if (root.shuffleMode && list.length > 1) {
+            do {
+                next = Math.floor(Math.random() * list.length);
+            } while (next === root.currentSongIndex);
+        } else {
+            next = (root.currentSongIndex + 1) % list.length;
+        }
         if (next < 0 || isNaN(next)) next = 0;
         root.playSong(next, undefined, isManual);
     }
@@ -452,18 +495,23 @@ Item {
 
     function togglePlay() {
         if (root.isChangingSong) {
-            // No alternar pausa si la nueva pista está en proceso de carga
+            return;
+        }
+        if (!root.hasStartedPlayback && !root.isPlaying) {
+            root.playSong(root.currentSongIndex, root.activePlaylistType, true);
             return;
         }
         if (activePlayer && activePlayer.canControl) {
             activePlayer.togglePlaying();
         } else {
+            controlProc.running = false;
             controlProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/music_control.sh", "toggle"];
             controlProc.running = true;
         }
     }
 
     function seekRelative(delta) {
+        controlProc.running = false;
         controlProc.command = [
             Quickshell.env("HOME") + "/.config/quickshell/scripts/music_control.sh",
             "seek",
@@ -472,8 +520,20 @@ Item {
         controlProc.running = true;
     }
 
+    function seekAbsolute(targetSec) {
+        root.currentSeconds = targetSec;
+        controlProc.running = false;
+        controlProc.command = [
+            Quickshell.env("HOME") + "/.config/quickshell/scripts/music_control.sh",
+            "seek_abs",
+            targetSec.toString()
+        ];
+        controlProc.running = true;
+    }
+
     function setVolume(pct) {
         root.volumePercent = Math.max(0, Math.min(100, pct));
+        controlProc.running = false;
         controlProc.command = [
             Quickshell.env("HOME") + "/.config/quickshell/scripts/music_control.sh",
             "volume",
@@ -482,16 +542,24 @@ Item {
         controlProc.running = true;
     }
 
-    function stopAndClose() {
+    function stopPlaybackOnly() {
         playProc.running = false;
-        if (activePlayer && activePlayer.canControl) {
+        root.hasStartedPlayback = false;
+        root.isChangingSong = false;
+        root.currentSeconds = 0;
+        if (activePlayer && activePlayer.canControl && root.isMpvPlayer) {
             activePlayer.stop();
         }
+        controlProc.running = false;
         controlProc.command = [
             Quickshell.env("HOME") + "/.config/quickshell/scripts/music_control.sh",
             "quit"
         ];
         controlProc.running = true;
+    }
+
+    function stopAndClose() {
+        root.stopPlaybackOnly();
         root.closeRequested();
     }
 
@@ -645,18 +713,74 @@ Item {
                         }
                     }
 
-                    // Indicador de arrastre con cursor visual
+                    // Indicador de arrastre y botones de acción de ventana
                     RowLayout {
-                        spacing: 6
-                        opacity: headerDragArea.containsMouse ? 0.9 : 0.4
-                        Behavior on opacity { NumberAnimation { duration: 150 } }
+                        spacing: 10
 
-                        Text {
-                            text: "⋮⋮ ARRASTRAR"
-                            color: root.colTextDim
-                            font.pixelSize: 10
-                            font.bold: true
-                            font.letterSpacing: 1.5
+                        RowLayout {
+                            spacing: 6
+                            opacity: headerDragArea.containsMouse ? 0.9 : 0.45
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                            Text {
+                                text: "⋮⋮ ARRASTRAR"
+                                color: root.colTextDim
+                                font.pixelSize: 10
+                                font.bold: true
+                                font.letterSpacing: 1.5
+                            }
+                        }
+
+                        // Botón Detener Audio (■) si hay música activa
+                        Rectangle {
+                            visible: root.isPlaying || root.hasStartedPlayback
+                            width: 30
+                            height: 30
+                            radius: 9
+                            color: stopHeaderMouse.containsMouse ? Qt.rgba(1, 0.33, 0.33, 0.22) : root.colSurface
+                            border.width: 1
+                            border.color: stopHeaderMouse.containsMouse ? "#ff5555" : root.colBorderSubtle
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "■"
+                                color: stopHeaderMouse.containsMouse ? "#ff5555" : root.colTextDim
+                                font.pixelSize: 11
+                            }
+
+                            MouseArea {
+                                id: stopHeaderMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.stopPlaybackOnly()
+                            }
+                        }
+
+                        // Botón Cerrar / Minimizar a la Dynamic Island (✕)
+                        Rectangle {
+                            width: 30
+                            height: 30
+                            radius: 9
+                            color: closeHeaderMouse.containsMouse ? root.colSurfaceHover : root.colSurface
+                            border.width: 1
+                            border.color: closeHeaderMouse.containsMouse ? root.colAccent : root.colBorderSubtle
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "✕"
+                                color: closeHeaderMouse.containsMouse ? root.colAccent : root.colTextDim
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
+
+                            MouseArea {
+                                id: closeHeaderMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.closeRequested()
+                            }
                         }
                     }
                 }
@@ -715,16 +839,64 @@ Item {
                                 }
                             }
 
-                            TextInput {
-                                id: searchField
+                            Item {
                                 Layout.fillWidth: true
-                                text: "Coldplay Yellow"
-                                color: root.colText
-                                font.pixelSize: 13
-                                clip: true
-                                selectByMouse: true
-                                Keys.onReturnPressed: root.runSearch(searchField.text)
-                                Keys.onEnterPressed: root.runSearch(searchField.text)
+                                Layout.fillHeight: true
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: searchField.text.length === 0
+                                    text: "Buscar canción, artista o mix en YouTube..."
+                                    color: root.colTextDim
+                                    font.pixelSize: 13
+                                    opacity: 0.65
+                                }
+
+                                TextInput {
+                                    id: searchField
+                                    anchors.fill: parent
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    text: "Coldplay Yellow"
+                                    color: root.colText
+                                    font.pixelSize: 13
+                                    clip: true
+                                    selectByMouse: true
+                                    Keys.onReturnPressed: {
+                                        searchField.focus = false;
+                                        root.runSearch(searchField.text);
+                                    }
+                                    Keys.onEnterPressed: {
+                                        searchField.focus = false;
+                                        root.runSearch(searchField.text);
+                                    }
+                                }
+                            }
+
+                            // Botón limpiar texto de búsqueda (✕)
+                            Rectangle {
+                                visible: searchField.text.length > 0
+                                width: 22
+                                height: 22
+                                radius: 11
+                                color: clearSearchMouse.containsMouse ? root.colSurfaceHover : "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    color: clearSearchMouse.containsMouse ? root.colText : root.colTextDim
+                                    font.pixelSize: 10
+                                }
+
+                                MouseArea {
+                                    id: clearSearchMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        searchField.text = "";
+                                        searchField.forceActiveFocus();
+                                    }
+                                }
                             }
 
                             // Botón Buscar con degradado Pywal
@@ -760,7 +932,10 @@ Item {
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.runSearch(searchField.text)
+                                    onClicked: {
+                                        searchField.focus = false;
+                                        root.runSearch(searchField.text);
+                                    }
                                 }
                             }
                         }
@@ -1240,7 +1415,7 @@ Item {
                             }
                         }
 
-                        // Barra de Progreso y Tiempo
+                        // Barra de Progreso y Tiempo con Control Deslizante Neón
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 4
@@ -1262,14 +1437,18 @@ Item {
                             }
 
                             Rectangle {
+                                id: progressTrack
                                 Layout.fillWidth: true
                                 height: 7
                                 radius: 3.5
                                 color: root.colSurface
 
+                                readonly property real progressRatio: Math.min(1.0, Math.max(0.0, root.currentSeconds / Math.max(1, root.durationSeconds)))
+
                                 Rectangle {
+                                    id: progressFill
                                     height: parent.height
-                                    width: Math.min(parent.width, Math.max(0, (root.currentSeconds / Math.max(1, root.durationSeconds)) * parent.width))
+                                    width: progressTrack.progressRatio * parent.width
                                     radius: 3.5
                                     gradient: Gradient {
                                         orientation: Gradient.Horizontal
@@ -1278,27 +1457,77 @@ Item {
                                     }
                                 }
 
+                                // Cabezal neón (Thumb)
+                                Rectangle {
+                                    width: progressMouse.containsMouse || progressMouse.pressed ? 13 : 9
+                                    height: width
+                                    radius: width / 2
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    x: Math.max(0, Math.min(parent.width - width, progressFill.width - width / 2))
+                                    color: "#ffffff"
+                                    border.width: 2
+                                    border.color: root.colAccent
+                                    Behavior on width { NumberAnimation { duration: 120 } }
+                                }
+
                                 MouseArea {
+                                    id: progressMouse
                                     anchors.fill: parent
+                                    anchors.topMargin: -5
+                                    anchors.bottomMargin: -5
+                                    hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: (mouse) => {
+                                    onPressed: (mouse) => {
+                                        var pct = Math.max(0, Math.min(1, mouse.x / width));
+                                        root.currentSeconds = Math.floor(pct * root.durationSeconds);
+                                    }
+                                    onPositionChanged: (mouse) => {
+                                        if (pressed) {
+                                            var pct = Math.max(0, Math.min(1, mouse.x / width));
+                                            root.currentSeconds = Math.floor(pct * root.durationSeconds);
+                                        }
+                                    }
+                                    onReleased: (mouse) => {
                                         var pct = Math.max(0, Math.min(1, mouse.x / width));
                                         var targetSec = Math.floor(pct * root.durationSeconds);
-                                        root.currentSeconds = targetSec;
-                                        controlProc.command = [
-                                            "python3", "-c",
-                                            "import socket, json; s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM); s.connect('/tmp/kiss_music_mpv.sock'); s.sendall(json.dumps({'command': ['seek', " + targetSec + ", 'absolute']}).encode() + b'\\n'); s.close()"
-                                        ];
-                                        controlProc.running = true;
+                                        root.seekAbsolute(targetSec);
                                     }
                                 }
                             }
                         }
 
-                        // Botones Principales (Anterior, Play/Pausa, Siguiente)
+                        // Botones Principales (Shuffle, Anterior, Play/Pausa, Siguiente, Repeat One)
                         RowLayout {
                             Layout.alignment: Qt.AlignHCenter
-                            spacing: 14
+                            spacing: 10
+
+                            // Botón Aleatorio (Shuffle)
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 10
+                                color: root.shuffleMode
+                                       ? Qt.rgba(root.colAccent.r, root.colAccent.g, root.colAccent.b, 0.20)
+                                       : (btnShuffleArea.containsMouse ? root.colSurfaceHover : root.colSurface)
+                                border.width: 1
+                                border.color: root.shuffleMode ? root.colAccent : root.colBorderSubtle
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "⇄"
+                                    color: root.shuffleMode ? root.colAccent : root.colTextDim
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                }
+
+                                MouseArea {
+                                    id: btnShuffleArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.shuffleMode = !root.shuffleMode
+                                }
+                            }
 
                             // Botón Anterior
                             Rectangle {
@@ -1307,7 +1536,7 @@ Item {
                                 radius: 12
                                 color: btnPrevArea.containsMouse ? root.colSurfaceHover : root.colSurface
                                 border.width: 1
-                                border.color: root.colBorderSubtle
+                                border.color: btnPrevArea.containsMouse ? root.colAccent : root.colBorderSubtle
 
                                 Text {
                                     anchors.centerIn: parent
@@ -1331,6 +1560,8 @@ Item {
                                 width: 50
                                 height: 50
                                 radius: 16
+                                scale: btnPlayArea.pressed ? 0.93 : (btnPlayArea.containsMouse ? 1.05 : 1.0)
+                                Behavior on scale { NumberAnimation { duration: 120 } }
                                 gradient: Gradient {
                                     orientation: Gradient.Horizontal
                                     GradientStop { position: 0.0; color: root.colMedia }
@@ -1342,6 +1573,7 @@ Item {
                                     text: root.isPlaying ? "❚❚" : "▶"
                                     color: "#0d1117"
                                     font.pixelSize: 18
+                                    font.bold: true
                                 }
 
                                 MouseArea {
@@ -1360,7 +1592,7 @@ Item {
                                 radius: 12
                                 color: btnNextArea.containsMouse ? root.colSurfaceHover : root.colSurface
                                 border.width: 1
-                                border.color: root.colBorderSubtle
+                                border.color: btnNextArea.containsMouse ? root.colAccent : root.colBorderSubtle
 
                                 Text {
                                     anchors.centerIn: parent
@@ -1376,6 +1608,34 @@ Item {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: root.playNextSong(true)
+                                }
+                            }
+
+                            // Botón Repetir Pista Actual (Repeat 1)
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 10
+                                color: root.repeatOneMode
+                                       ? Qt.rgba(root.colMedia.r, root.colMedia.g, root.colMedia.b, 0.22)
+                                       : (btnRepeatArea.containsMouse ? root.colSurfaceHover : root.colSurface)
+                                border.width: 1
+                                border.color: root.repeatOneMode ? root.colMedia : root.colBorderSubtle
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "↻1"
+                                    color: root.repeatOneMode ? root.colMedia : root.colTextDim
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+
+                                MouseArea {
+                                    id: btnRepeatArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.repeatOneMode = !root.repeatOneMode
                                 }
                             }
                         }
@@ -1995,10 +2255,23 @@ Item {
         if (event.key === Qt.Key_R && (event.modifiers & Qt.MetaModifier)) {
             root.stopAndClose();
             event.accepted = true;
-        } else if (((event.key === Qt.Key_Q) && (event.modifiers & Qt.MetaModifier)) || event.key === Qt.Key_Escape) {
-            root.closeRequested();
+            return;
+        }
+        if (((event.key === Qt.Key_Q) && (event.modifiers & Qt.MetaModifier)) || event.key === Qt.Key_Escape) {
+            if (searchField.activeFocus && event.key === Qt.Key_Escape) {
+                searchField.focus = false;
+                root.forceActiveFocus();
+            } else {
+                root.closeRequested();
+            }
             event.accepted = true;
-        } else if (event.key === Qt.Key_Space) {
+            return;
+        }
+        // Si el usuario está escribiendo en el buscador, no interceptar Espacio, números ni flechas
+        if (searchField.activeFocus) {
+            return;
+        }
+        if (event.key === Qt.Key_Space) {
             root.togglePlay();
             event.accepted = true;
         } else if (event.key === Qt.Key_1) {
