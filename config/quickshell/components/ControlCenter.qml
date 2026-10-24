@@ -59,6 +59,37 @@ Item {
     property bool volumeMuted: false
     property int brightnessPercent: 80
 
+    // Estados de Telemetría (System Vitals)
+    property int cpuPercent: 0
+    property int cpuTemp: 0
+    property int ramPercent: 0
+    property string ramUsed: "0G"
+    property string ramTotal: "0G"
+    property int batPercent: 100
+    property string batStatus: "Full"
+    property string batDetail: ""
+    readonly property bool batCharging: batStatus === "Charging"
+    property string highlightSection: ""
+
+    Timer {
+        id: highlightTimer
+        interval: 3200
+        repeat: false
+        onTriggered: root.highlightSection = ""
+    }
+
+    function focusSection(sec) {
+        root.highlightSection = sec;
+        if (sec === "wifi") {
+            root.wifiDrawerOpen = true;
+            root.btDrawerOpen = false;
+        } else if (sec === "bluetooth") {
+            root.btDrawerOpen = true;
+            root.wifiDrawerOpen = false;
+        }
+        highlightTimer.restart();
+    }
+
     property alias card: panelCard
     readonly property bool isAnimating: slideAnim.running
 
@@ -377,6 +408,38 @@ Item {
         slidersActionProc.running = true;
     }
 
+    Process {
+        id: cmdProc
+        command: []
+        running: false
+    }
+
+    function launchCommand(cmd) {
+        cmdProc.command = ["bash", "-c", cmd];
+        cmdProc.running = true;
+    }
+
+    Process {
+        id: sysStatsProc
+        command: [Quickshell.env("HOME") + "/.config/quickshell/scripts/stats.sh"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var data = JSON.parse(this.text);
+                    if (data.cpu !== undefined) root.cpuPercent = data.cpu;
+                    if (data.cpu_temp !== undefined) root.cpuTemp = data.cpu_temp;
+                    if (data.ram !== undefined) root.ramPercent = data.ram;
+                    if (data.ram_used) root.ramUsed = data.ram_used;
+                    if (data.ram_total) root.ramTotal = data.ram_total;
+                    if (data.bat !== undefined) root.batPercent = data.bat;
+                    if (data.bat_status) root.batStatus = data.bat_status;
+                    if (data.bat_detail) root.batDetail = data.bat_detail;
+                } catch (e) {}
+            }
+        }
+    }
+
     function refreshAll() {
         if (!notifProc.running) notifProc.running = true;
         if (!keepAwakeProc.running) keepAwakeProc.running = true;
@@ -385,6 +448,7 @@ Item {
         if (!btScanProc.running) btScanProc.running = true;
         if (!micProc.running) micProc.running = true;
         if (!slidersProc.running) slidersProc.running = true;
+        if (!sysStatsProc.running) sysStatsProc.running = true;
     }
 
     Timer {
@@ -760,6 +824,221 @@ Item {
             }
 
             // ==========================================
+            // 1.3. SYSTEM VITALS HUD (CPU, RAM, BATERÍA Y TERMOMÉTRICA)
+            // ==========================================
+            Rectangle {
+                id: vitalsCard
+                Layout.fillWidth: true
+                height: 76
+                radius: 12
+                color: Qt.rgba(0, 0, 0, 0.32)
+                border.width: 1
+                border.color: (root.highlightSection === "vitals" || root.highlightSection === "cpu" || root.highlightSection === "ram" || root.highlightSection === "battery")
+                              ? (root.theme ? root.theme.accent : "#00ffcc")
+                              : Qt.rgba(1, 1, 1, 0.06)
+
+                Behavior on border.color { ColorAnimation { duration: 250 } }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 5
+
+                    // Cabecera: Título y acceso directo a Htop
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Row {
+                            spacing: 5
+                            Layout.alignment: Qt.AlignVCenter
+
+                            Text {
+                                text: "󰘚"
+                                font.family: root.theme ? root.theme.fontMono : "monospace"
+                                font.pixelSize: 11
+                                color: root.theme ? root.theme.accent : "#00ffcc"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                text: "System Vitals"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 10
+                                font.bold: true
+                                color: "#ffffff"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        // Chip interactivo para Htop
+                        Rectangle {
+                            height: 16
+                            width: htopLabel.implicitWidth + 10
+                            radius: 8
+                            color: htopMouse.containsMouse ? (root.theme ? root.theme.accent : "#00ffcc") : Qt.rgba(1, 1, 1, 0.08)
+                            border.width: 1
+                            border.color: htopMouse.containsMouse ? (root.theme ? root.theme.accent : "#00ffcc") : Qt.rgba(1, 1, 1, 0.12)
+                            Layout.alignment: Qt.AlignVCenter
+
+                            Text {
+                                id: htopLabel
+                                anchors.centerIn: parent
+                                text: " Htop"
+                                font.family: root.theme ? root.theme.fontMono : "monospace"
+                                font.pixelSize: 8
+                                font.bold: true
+                                color: htopMouse.containsMouse ? "#0d1117" : (root.theme ? root.theme.textDim : "#8b949e")
+                            }
+
+                            MouseArea {
+                                id: htopMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.launchCommand("kitty -e htop &")
+                            }
+                        }
+                    }
+
+                    // 3 Métricas: CPU, RAM, BATERÍA
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 5
+
+                        // 1. CPU
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 40
+                            radius: 8
+                            color: root.highlightSection === "cpu" ? Qt.rgba(0, 1, 0.8, 0.18) : Qt.rgba(1, 1, 1, 0.05)
+                            border.width: root.highlightSection === "cpu" ? 1 : 0
+                            border.color: root.theme ? root.theme.cpuColor : "#50fa7b"
+
+                            Column {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 2
+
+                                Row {
+                                    spacing: 3
+                                    Text {
+                                        text: "󰻠"
+                                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                                        font.pixelSize: 9
+                                        color: root.theme ? root.theme.cpuColor : "#50fa7b"
+                                    }
+                                    Text {
+                                        text: "CPU " + root.cpuPercent + "%"
+                                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: "#f0f6fc"
+                                    }
+                                }
+
+                                Text {
+                                    text: root.cpuTemp > 0 ? (root.cpuTemp + "°C") : "Normal"
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                    font.pixelSize: 8
+                                    color: root.theme ? root.theme.textDim : "#8b949e"
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.launchCommand("kitty -e htop &")
+                            }
+                        }
+
+                        // 2. RAM
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 40
+                            radius: 8
+                            color: root.highlightSection === "ram" ? Qt.rgba(0, 1, 0.8, 0.18) : Qt.rgba(1, 1, 1, 0.05)
+                            border.width: root.highlightSection === "ram" ? 1 : 0
+                            border.color: root.theme ? root.theme.accent : "#00ffcc"
+
+                            Column {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 2
+
+                                Row {
+                                    spacing: 3
+                                    Text {
+                                        text: "󰍛"
+                                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                                        font.pixelSize: 9
+                                        color: root.theme ? root.theme.accent : "#00ffcc"
+                                    }
+                                    Text {
+                                        text: "RAM " + root.ramPercent + "%"
+                                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: "#f0f6fc"
+                                    }
+                                }
+
+                                Text {
+                                    text: root.ramUsed + " / " + root.ramTotal
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                    font.pixelSize: 8
+                                    color: root.theme ? root.theme.textDim : "#8b949e"
+                                }
+                            }
+                        }
+
+                        // 3. BATERÍA
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 40
+                            radius: 8
+                            color: root.highlightSection === "battery" ? Qt.rgba(1.0, 0.72, 0.42, 0.22) : Qt.rgba(1, 1, 1, 0.05)
+                            border.width: root.highlightSection === "battery" ? 1 : 0
+                            border.color: root.batCharging ? "#00ffcc" : (root.theme ? root.theme.warning : "#ffb86c")
+
+                            Column {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 2
+
+                                Row {
+                                    spacing: 3
+                                    Text {
+                                        text: root.batCharging ? "󱐋" : "󰂀"
+                                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                                        font.pixelSize: 9
+                                        color: root.batCharging ? "#00ffcc" : (root.batPercent < 20 ? "#ff5555" : (root.theme ? root.theme.warning : "#ffb86c"))
+                                    }
+                                    Text {
+                                        text: root.batPercent + "%"
+                                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: "#f0f6fc"
+                                    }
+                                }
+
+                                Text {
+                                    text: root.batDetail.length > 0 ? root.batDetail : root.batStatus
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                    font.pixelSize: 8
+                                    elide: Text.ElideRight
+                                    width: parent.width - 6
+                                    color: root.theme ? root.theme.textDim : "#8b949e"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ==========================================
             // 1.5. SLIDERS DE VOLUMEN Y BRILLO (Estilo Prototipo Neón)
             // ==========================================
             Rectangle {
@@ -768,7 +1047,9 @@ Item {
                 radius: 12
                 color: Qt.rgba(0, 0, 0, 0.30)
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.06)
+                border.color: root.highlightSection === "volume" ? (root.theme ? root.theme.accent : "#00ffcc") : Qt.rgba(1, 1, 1, 0.06)
+
+                Behavior on border.color { ColorAnimation { duration: 250 } }
 
                 ColumnLayout {
                     anchors.fill: parent

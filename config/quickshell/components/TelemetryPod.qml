@@ -17,6 +17,18 @@ Item {
     property var theme
     readonly property Item podCard: card
     signal openControlCenterRequested()
+    signal openSectionRequested(string section)
+
+    Process {
+        id: cmdProc
+        command: []
+        running: false
+    }
+
+    function launchCommand(cmd) {
+        cmdProc.command = ["bash", "-c", cmd];
+        cmdProc.running = true;
+    }
 
     implicitHeight: card.height
     implicitWidth: card.width
@@ -123,8 +135,8 @@ Item {
             id: podMouse
             anchors.fill: parent
             hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.openControlCenterRequested()
+            acceptedButtons: Qt.NoButton
+            propagateComposedEvents: true
         }
 
         Row {
@@ -180,6 +192,13 @@ Item {
                         font.bold: true
                         color: root.theme ? root.theme.accent : "#00ffcc"
                     }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.openSectionRequested("cpu")
+                    }
                 }
 
                 // Tacómetro 2: RAM (Verde Neón)
@@ -221,6 +240,13 @@ Item {
                         font.pixelSize: 8
                         font.bold: true
                         color: root.theme ? root.theme.cpuColor : "#50fa7b"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.openSectionRequested("ram")
                     }
                 }
 
@@ -268,6 +294,13 @@ Item {
                         font.bold: true
                         color: parent.isCharging ? "#00ffcc" : (root.batVal < 20 ? "#ff5555" : (root.theme ? root.theme.warning : "#ffb86c"))
                     }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.openSectionRequested("battery")
+                    }
                 }
             }
 
@@ -282,24 +315,37 @@ Item {
             // ----------------------------------------------------
             // 2. Reloj y Fecha Digital
             // ----------------------------------------------------
-            Column {
+            Item {
+                width: clockCol.implicitWidth
+                height: clockCol.implicitHeight
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 1
 
-                Text {
-                    text: root.currentTime
-                    font.family: root.theme ? root.theme.fontMono : "monospace"
-                    font.pixelSize: 11
-                    font.bold: true
-                    color: root.theme ? root.theme.text : "#f0f6fc"
+                Column {
+                    id: clockCol
+                    spacing: 1
+
+                    Text {
+                        text: root.currentTime
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: root.theme ? root.theme.text : "#f0f6fc"
+                    }
+
+                    Text {
+                        text: root.currentDate
+                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                        font.pixelSize: 8
+                        font.bold: true
+                        color: root.theme ? root.theme.textDim : "#8b949e"
+                    }
                 }
 
-                Text {
-                    text: root.currentDate
-                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                    font.pixelSize: 8
-                    font.bold: true
-                    color: root.theme ? root.theme.textDim : "#8b949e"
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openSectionRequested("notif")
                 }
             }
 
@@ -319,19 +365,54 @@ Item {
                 spacing: 6
 
                 // WiFi
-                Text {
-                    text: root.wifiSsid !== "Disconnected" ? "󰤨" : "󰤮"
-                    font.family: root.theme ? root.theme.fontMono : "monospace"
-                    font.pixelSize: 11
-                    color: root.wifiSsid !== "Disconnected" ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.textDim : "#6e7681")
+                Item {
+                    width: 16
+                    height: 20
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.wifiSsid !== "Disconnected" ? "󰤨" : "󰤮"
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                        font.pixelSize: 11
+                        color: root.wifiSsid !== "Disconnected" ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.textDim : "#6e7681")
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.openSectionRequested("wifi")
+                    }
                 }
 
                 // Audio
-                Text {
-                    text: root.volMuted ? "󰕟" : (root.volumeVal > 50 ? "󰕾" : "󰖀")
-                    font.family: root.theme ? root.theme.fontMono : "monospace"
-                    font.pixelSize: 11
-                    color: root.volMuted ? "#ff5555" : (root.theme ? root.theme.text : "#f0f6fc")
+                Item {
+                    width: 16
+                    height: 20
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.volMuted ? "󰕟" : (root.volumeVal > 50 ? "󰕾" : "󰖀")
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                        font.pixelSize: 11
+                        color: root.volMuted ? "#ff5555" : (root.theme ? root.theme.text : "#f0f6fc")
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.launchCommand("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle");
+                            root.openSectionRequested("volume");
+                        }
+                        onWheel: (wheel) => {
+                            var step = wheel.angleDelta.y > 0 ? "5%+" : "5%-";
+                            root.launchCommand("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + step);
+                        }
+                    }
                 }
             }
         }

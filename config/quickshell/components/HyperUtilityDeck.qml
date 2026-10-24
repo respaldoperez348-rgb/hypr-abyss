@@ -16,6 +16,7 @@ Item {
 
     property var theme
     signal toggleControlCenterRequested()
+    signal openControlCenterSectionRequested(string section)
     signal toggleMusicPlayerRequested()
 
     // Control de OSD
@@ -86,6 +87,7 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: 4
         onOpenControlCenterRequested: root.toggleControlCenterRequested()
+        onOpenSectionRequested: (sec) => root.openControlCenterSectionRequested(sec)
     }
 
     // ==========================================

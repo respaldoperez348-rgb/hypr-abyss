@@ -121,6 +121,7 @@ ShellRoot {
 
     // Señal e IPC para disparar el OSD de Volumen/Brillo en la Dynamic Island al instante
     signal osdRequested(string mode, int val, bool muted)
+    signal openControlCenterSection(string section)
 
     IpcHandler {
         target: "osd"
@@ -200,6 +201,10 @@ ShellRoot {
                 anchors.fill: parent
 
                 onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
+                onOpenControlCenterSectionRequested: (sec) => {
+                    root.controlCenterOpen = true;
+                    root.openControlCenterSection(sec);
+                }
                 onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
             }
         }
@@ -290,6 +295,13 @@ ShellRoot {
                 isOpen: root.controlCenterOpen
                 anchors.fill: parent
                 onCloseRequested: root.controlCenterOpen = false
+
+                Connections {
+                    target: root
+                    function onOpenControlCenterSection(sec) {
+                        ccContainer.focusSection(sec);
+                    }
+                }
             }
         }
     }
