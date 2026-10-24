@@ -24,9 +24,28 @@ Item {
     implicitWidth: 300
     implicitHeight: 720
 
-    // Estados de Notificaciones
+    // Estados de Notificaciones y Calendario
     property var notifList: []
     property bool isDnd: false
+    property string upperTab: "notif" // "notif" o "calendar"
+    property var calDate: new Date()
+    property int calYear: calDate.getFullYear()
+    property int calMonth: calDate.getMonth()
+    property int calSelectedDay: calDate.getDate()
+    readonly property var monthNames: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+    function nextMonth() {
+        if (calMonth === 11) { calMonth = 0; calYear++; } else { calMonth++; }
+    }
+    function prevMonth() {
+        if (calMonth === 0) { calMonth = 11; calYear--; } else { calMonth--; }
+    }
+    function jumpToday() {
+        var now = new Date();
+        calYear = now.getFullYear();
+        calMonth = now.getMonth();
+        calSelectedDay = now.getDate();
+    }
 
     // Estados de Keep Awake
     property bool keepAwakeActive: false
@@ -80,7 +99,11 @@ Item {
 
     function focusSection(sec) {
         root.highlightSection = sec;
-        if (sec === "wifi") {
+        if (sec === "calendar") {
+            root.upperTab = "calendar";
+        } else if (sec === "notif") {
+            root.upperTab = "notif";
+        } else if (sec === "wifi") {
             root.wifiDrawerOpen = true;
             root.btDrawerOpen = false;
         } else if (sec === "bluetooth") {
@@ -557,39 +580,102 @@ Item {
                     anchors.margins: 10
                     spacing: 6
 
-                    // Header de Notificaciones
+                    // Header con Pestañas: [ 󰂚 Notifs ] [ 󰃭 Calendario ]
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 6
 
-                        Text {
-                            text: "Notifications"
-                            font.family: root.theme ? root.theme.fontFamily : "monospace"
-                            font.pixelSize: 10
-                            font.bold: true
-                            color: root.theme ? root.theme.text : "#f0f6fc"
-                            Layout.alignment: Qt.AlignVCenter
-                        }
-
+                        // Tab Notificaciones
                         Rectangle {
-                            visible: root.notifList.length > 0
-                            height: 15
-                            width: notifCountText.implicitWidth + 8
-                            radius: 7.5
-                            color: root.theme ? root.theme.accent : "#00ffcc"
-                            Layout.alignment: Qt.AlignVCenter
+                            height: 20
+                            width: notifTabRow.implicitWidth + 12
+                            radius: 10
+                            color: root.upperTab === "notif" ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.22) : Qt.rgba(0, 1, 0.8, 0.22)) : Qt.rgba(1, 1, 1, 0.05)
+                            border.width: 1
+                            border.color: root.upperTab === "notif" ? (root.theme ? root.theme.accent : "#00ffcc") : "transparent"
 
-                            Text {
-                                id: notifCountText
+                            RowLayout {
+                                id: notifTabRow
                                 anchors.centerIn: parent
-                                text: root.notifList.length
-                                font.pixelSize: 8
-                                font.bold: true
-                                color: "#0d1117"
+                                spacing: 4
+                                Text {
+                                    text: "󰂚"
+                                    font.family: root.theme ? root.theme.fontMono : "monospace"
+                                    font.pixelSize: 9
+                                    color: root.upperTab === "notif" ? (root.theme ? root.theme.accent : "#00ffcc") : "#8b949e"
+                                }
+                                Text {
+                                    text: "Notifs"
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                    font.pixelSize: 8
+                                    font.bold: root.upperTab === "notif"
+                                    color: root.upperTab === "notif" ? "#ffffff" : "#8b949e"
+                                }
+                                Rectangle {
+                                    visible: root.notifList.length > 0
+                                    height: 12
+                                    width: notifBadgeCount.implicitWidth + 6
+                                    radius: 6
+                                    color: root.theme ? root.theme.accent : "#00ffcc"
+                                    Text {
+                                        id: notifBadgeCount
+                                        anchors.centerIn: parent
+                                        text: root.notifList.length
+                                        font.pixelSize: 7
+                                        font.bold: true
+                                        color: "#0d1117"
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.upperTab = "notif"
                             }
                         }
 
+                        // Tab Calendario
                         Rectangle {
+                            height: 20
+                            width: calTabRow.implicitWidth + 12
+                            radius: 10
+                            color: root.upperTab === "calendar" ? (root.theme ? Qt.rgba(root.theme.accentAlt.r, root.theme.accentAlt.g, root.theme.accentAlt.b, 0.24) : Qt.rgba(0.74, 0.58, 0.98, 0.24)) : Qt.rgba(1, 1, 1, 0.05)
+                            border.width: 1
+                            border.color: root.upperTab === "calendar" ? (root.theme ? root.theme.accentAlt : "#bd93f9") : "transparent"
+
+                            RowLayout {
+                                id: calTabRow
+                                anchors.centerIn: parent
+                                spacing: 4
+                                Text {
+                                    text: "󰃭"
+                                    font.family: root.theme ? root.theme.fontMono : "monospace"
+                                    font.pixelSize: 9
+                                    color: root.upperTab === "calendar" ? (root.theme ? root.theme.accentAlt : "#bd93f9") : "#8b949e"
+                                }
+                                Text {
+                                    text: "Calendario"
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                    font.pixelSize: 8
+                                    font.bold: root.upperTab === "calendar"
+                                    color: root.upperTab === "calendar" ? "#ffffff" : "#8b949e"
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.upperTab = "calendar"
+                            }
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Rectangle {
+                            visible: root.upperTab === "notif"
                             height: 18
                             width: dndBadgeRow.implicitWidth + 10
                             radius: 9
@@ -624,11 +710,9 @@ Item {
                             }
                         }
 
-                        Item { Layout.fillWidth: true }
-
                         // Botón Limpiar Todo
                         Text {
-                            visible: root.notifList.length > 0
+                            visible: root.upperTab === "notif" && root.notifList.length > 0
                             text: "Clear All"
                             font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                             font.pixelSize: 9
@@ -694,7 +778,7 @@ Item {
 
                         // Estado Vacío (Dino Pixel Art + Cactus)
                         Column {
-                            visible: root.notifList.length === 0
+                            visible: root.upperTab === "notif" && root.notifList.length === 0
                             anchors.centerIn: parent
                             spacing: 8
 
@@ -750,7 +834,7 @@ Item {
 
                         // Lista de Notificaciones
                         ListView {
-                            visible: root.notifList.length > 0
+                            visible: root.upperTab === "notif" && root.notifList.length > 0
                             anchors.fill: parent
                             clip: true
                             spacing: 5
@@ -815,6 +899,197 @@ Item {
                                         color: root.theme ? root.theme.textDim : "#8b949e"
                                         elide: Text.ElideRight
                                         Layout.fillWidth: true
+                                    }
+                                }
+                            }
+                        }
+
+                        // ==========================================
+                        // Vista Mini Calendario Interactivo
+                        // ==========================================
+                        ColumnLayout {
+                            visible: root.upperTab === "calendar"
+                            anchors.fill: parent
+                            spacing: 4
+
+                            // Navegación Mes / Año + Botón Hoy
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Text {
+                                    text: root.monthNames[root.calMonth] + " " + root.calYear
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    color: "#ffffff"
+                                    Layout.fillWidth: true
+                                }
+
+                                Rectangle {
+                                    height: 18
+                                    width: hoyLabel.implicitWidth + 8
+                                    radius: 5
+                                    color: hoyMouse.containsMouse ? (root.theme ? Qt.rgba(root.theme.accentAlt.r, root.theme.accentAlt.g, root.theme.accentAlt.b, 0.35) : Qt.rgba(0.74, 0.58, 0.98, 0.35)) : Qt.rgba(1, 1, 1, 0.06)
+                                    border.width: 1
+                                    border.color: root.theme ? root.theme.accentAlt : "#bd93f9"
+                                    Text {
+                                        id: hoyLabel
+                                        anchors.centerIn: parent
+                                        text: "Hoy"
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: root.theme ? root.theme.accentAlt : "#bd93f9"
+                                    }
+                                    MouseArea {
+                                        id: hoyMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.jumpToday()
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 18
+                                    height: 18
+                                    radius: 5
+                                    color: prevMonthM.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(1, 1, 1, 0.05)
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "‹"
+                                        font.pixelSize: 12
+                                        font.bold: true
+                                        color: "#ffffff"
+                                    }
+                                    MouseArea {
+                                        id: prevMonthM
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.prevMonth()
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 18
+                                    height: 18
+                                    radius: 5
+                                    color: nextMonthM.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(1, 1, 1, 0.05)
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "›"
+                                        font.pixelSize: 12
+                                        font.bold: true
+                                        color: "#ffffff"
+                                    }
+                                    MouseArea {
+                                        id: nextMonthM
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.nextMonth()
+                                    }
+                                }
+                            }
+
+                            // Días de la semana
+                            Row {
+                                Layout.fillWidth: true
+                                spacing: 0
+                                readonly property real colW: width / 7.0
+                                Repeater {
+                                    model: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"]
+                                    delegate: Item {
+                                        width: parent.colW
+                                        height: 16
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            font.pixelSize: 8
+                                            font.bold: true
+                                            color: (index >= 5) ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.textDim : "#8b949e")
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Grid de 42 celdas de días
+                            Grid {
+                                id: daysGrid
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                columns: 7
+                                rows: 6
+                                spacing: 1
+
+                                readonly property real cellW: (width - 6 * spacing) / 7.0
+                                readonly property real cellH: (height - 5 * spacing) / 6.0
+                                readonly property int firstDayOfWeek: (new Date(root.calYear, root.calMonth, 1).getDay() + 6) % 7
+                                readonly property int daysInMonth: new Date(root.calYear, root.calMonth + 1, 0).getDate()
+                                readonly property int daysInPrevMonth: new Date(root.calYear, root.calMonth, 0).getDate()
+
+                                Repeater {
+                                    model: 42
+                                    delegate: Rectangle {
+                                        id: dayCell
+                                        width: daysGrid.cellW
+                                        height: daysGrid.cellH
+                                        radius: 5
+
+                                        readonly property int idx: modelData
+                                        readonly property bool isPrevMonth: idx < daysGrid.firstDayOfWeek
+                                        readonly property bool isNextMonth: idx >= daysGrid.firstDayOfWeek + daysGrid.daysInMonth
+                                        readonly property bool isCurrentMonth: !isPrevMonth && !isNextMonth
+                                        readonly property int dayNumber: {
+                                            if (isPrevMonth) return daysGrid.daysInPrevMonth - daysGrid.firstDayOfWeek + 1 + idx;
+                                            if (isCurrentMonth) return idx - daysGrid.firstDayOfWeek + 1;
+                                            return idx - (daysGrid.firstDayOfWeek + daysGrid.daysInMonth) + 1;
+                                        }
+                                        readonly property bool isToday: {
+                                            var now = new Date();
+                                            return isCurrentMonth && (dayNumber === now.getDate()) && (root.calMonth === now.getMonth()) && (root.calYear === now.getFullYear());
+                                        }
+                                        readonly property bool isSelected: isCurrentMonth && (dayNumber === root.calSelectedDay)
+
+                                        color: isToday
+                                               ? (root.theme ? root.theme.accent : "#00ffcc")
+                                               : (isSelected
+                                                  ? (root.theme ? Qt.rgba(root.theme.accentAlt.r, root.theme.accentAlt.g, root.theme.accentAlt.b, 0.28) : Qt.rgba(0.74, 0.58, 0.98, 0.28))
+                                                  : (dayMouse.containsMouse && isCurrentMonth ? Qt.rgba(1, 1, 1, 0.08) : "transparent"))
+
+                                        border.width: isSelected && !isToday ? 1 : 0
+                                        border.color: root.theme ? root.theme.accentAlt : "#bd93f9"
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: dayCell.dayNumber
+                                            font.pixelSize: dayCell.isToday ? 9 : 8
+                                            font.bold: dayCell.isToday || dayCell.isSelected
+                                            color: dayCell.isToday
+                                                   ? "#0d1117"
+                                                   : (dayCell.isCurrentMonth
+                                                      ? (dayMouse.containsMouse ? "#ffffff" : "#e6edf3")
+                                                      : "#383e47")
+                                        }
+
+                                        MouseArea {
+                                            id: dayMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: dayCell.isCurrentMonth
+                                            cursorShape: dayCell.isCurrentMonth ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                            onClicked: {
+                                                if (dayCell.isCurrentMonth) {
+                                                    root.calSelectedDay = dayCell.dayNumber;
+                                                } else if (dayCell.isPrevMonth) {
+                                                    root.prevMonth();
+                                                    root.calSelectedDay = dayCell.dayNumber;
+                                                } else {
+                                                    root.nextMonth();
+                                                    root.calSelectedDay = dayCell.dayNumber;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

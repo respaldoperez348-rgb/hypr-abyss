@@ -345,7 +345,14 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.openSectionRequested("notif")
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: (mouse) => {
+                        if (mouse.button === Qt.RightButton) {
+                            root.openSectionRequested("notif");
+                        } else {
+                            root.openSectionRequested("calendar");
+                        }
+                    }
                 }
             }
 

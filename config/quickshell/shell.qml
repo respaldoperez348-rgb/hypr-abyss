@@ -57,6 +57,14 @@ ShellRoot {
         function close(): void {
             root.controlCenterOpen = false;
         }
+        function calendar(): void {
+            root.controlCenterOpen = true;
+            root.openControlCenterSection("calendar");
+        }
+        function section(sec: string): void {
+            root.controlCenterOpen = true;
+            root.openControlCenterSection(sec);
+        }
     }
 
     IpcHandler {
@@ -87,6 +95,40 @@ ShellRoot {
         }
         function close(): void {
             root.projectHubOpen = false;
+        }
+    }
+
+    // Control de apertura del Historial de Portapapeles (Super + H)
+    property bool clipboardOpen: false
+
+    IpcHandler {
+        target: "clipboard"
+
+        function toggle(): void {
+            root.clipboardOpen = !root.clipboardOpen;
+        }
+        function open(): void {
+            root.clipboardOpen = true;
+        }
+        function close(): void {
+            root.clipboardOpen = false;
+        }
+    }
+
+    // Control de apertura del Scratchpad / Bloc de Notas (Super + S)
+    property bool scratchpadOpen: false
+
+    IpcHandler {
+        target: "scratchpad"
+
+        function toggle(): void {
+            root.scratchpadOpen = !root.scratchpadOpen;
+        }
+        function open(): void {
+            root.scratchpadOpen = true;
+        }
+        function close(): void {
+            root.scratchpadOpen = false;
         }
     }
 
@@ -540,6 +582,94 @@ ShellRoot {
                 isOpen: root.projectHubOpen
                 anchors.fill: parent
                 onCloseRequested: root.projectHubOpen = false
+            }
+        }
+    }
+
+    // ==========================================
+    // 9. Gestor de Portapapeles (Clipboard Glass - Super + H)
+    // ==========================================
+    Variants {
+        id: clipboardVariants
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: clipboardPanel
+            property var modelData
+            screen: modelData
+
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+
+            visible: root.clipboardOpen
+
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: root.clipboardOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+            color: "transparent"
+
+            mask: Region {
+                item: clipboardContainer.card
+            }
+
+            BackgroundEffect.blurRegion: Region {
+                item: clipboardContainer.card
+            }
+
+            ClipboardManager {
+                id: clipboardContainer
+                theme: globalTheme
+                isOpen: root.clipboardOpen
+                anchors.fill: parent
+                onCloseRequested: root.clipboardOpen = false
+            }
+        }
+    }
+
+    // ==========================================
+    // 10. Dev Scratchpad (Bloc de Notas Flotante - Super + S)
+    // ==========================================
+    Variants {
+        id: scratchpadVariants
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: scratchpadPanel
+            property var modelData
+            screen: modelData
+
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+
+            visible: root.scratchpadOpen
+
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: root.scratchpadOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+            color: "transparent"
+
+            mask: Region {
+                item: scratchpadContainer.card
+            }
+
+            BackgroundEffect.blurRegion: Region {
+                item: scratchpadContainer.card
+            }
+
+            DevScratchpad {
+                id: scratchpadContainer
+                theme: globalTheme
+                isOpen: root.scratchpadOpen
+                anchors.fill: parent
+                onCloseRequested: root.scratchpadOpen = false
             }
         }
     }

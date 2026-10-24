@@ -15,4 +15,11 @@ hl.on("hyprland.start", function ()
 
     -- Demonio de inactividad y bloqueo automático (hypridle)
     hl.exec_cmd("hypridle")
+
+    -- Núcleo Holográfico B.O.D.Y. (detector de doble aplauso y respuesta instantánea)
+    hl.exec_cmd(home .. "/.local/bin/body --minimized")
+
+    -- Demonio de Portapapeles (cliphist para historial en Quickshell)
+    hl.exec_cmd("wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("wl-paste --type image --watch cliphist store")
 end)

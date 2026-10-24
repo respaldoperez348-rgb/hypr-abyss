@@ -48,6 +48,12 @@ hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd("quickshell ipc call musicplayer togg
 -- Atajo para Selector de Proyectos Hub (Super + O)
 hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("quickshell ipc call projects toggle"))
 
+-- Atajo para Historial de Portapapeles Glass (Super + H)
+hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("quickshell ipc call clipboard toggle"))
+
+-- Atajo para Dev Scratchpad / Bloc de Notas Flotante (Super + S)
+hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("quickshell ipc call scratchpad toggle"))
+
 -- Navegación con flechas
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))

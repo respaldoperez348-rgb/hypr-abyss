@@ -23,6 +23,36 @@ Item {
     implicitWidth: card.width
 
     // ==========================================
+    // Visualizador de Audio Reactivo CAVA (PipeWire)
+    // ==========================================
+    property var cavaBars: [3, 4, 2, 5, 3, 4]
+    property bool cavaActive: false
+
+    Process {
+        id: cavaProc
+        command: ["cava", "-p", Quickshell.env("HOME") + "/.config/quickshell/scripts/cava_pill.conf"]
+        running: root.isPlaying
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: (line) => {
+                var parts = line.trim().split(";");
+                if (parts.length >= 6) {
+                    var newBars = [];
+                    var total = 0;
+                    for (var i = 0; i < 6; i++) {
+                        var val = parseInt(parts[i]);
+                        if (isNaN(val)) val = 0;
+                        total += val;
+                        newBars.push(Math.round(3 + (val / 100.0) * 13));
+                    }
+                    root.cavaBars = newBars;
+                    root.cavaActive = total > 4;
+                }
+            }
+        }
+    }
+
+    // ==========================================
     // 1. Integración Reactiva con MPRIS
     // ==========================================
     property MprisPlayer activePlayer: null
@@ -184,7 +214,7 @@ Item {
                 }
             }
 
-            // 2. Ecualizador de Audio Neón (4 Barras animadas)
+            // 2. Ecualizador de Audio Neón CAVA (6 Barras reactivas a PipeWire)
             Item {
                 width: eqRow.implicitWidth
                 height: 18
@@ -196,43 +226,23 @@ Item {
                     spacing: 2
 
                     Repeater {
-                        model: [
-                            { minH: 3, maxH: 14, dur: 320, del: 0 },
-                            { minH: 4, maxH: 11, dur: 240, del: 60 },
-                            { minH: 2, maxH: 15, dur: 360, del: 120 },
-                            { minH: 3, maxH: 9,  dur: 280, del: 40 }
-                        ]
+                        model: 6
 
                         delegate: Rectangle {
                             id: eqBar
-                            required property var modelData
+                            required property int index
                             width: 2.2
-                            height: root.isPlaying ? modelData.minH : (podMouse.containsMouse ? 8 : 3)
+                            height: root.isPlaying
+                                    ? (root.cavaActive ? root.cavaBars[index] : (3 + (index % 3) * 3))
+                                    : (podMouse.containsMouse ? 8 : 3)
                             radius: 1.1
                             color: root.isPlaying
                                    ? (root.theme ? root.theme.accent : "#00ffcc")
                                    : (root.theme ? root.theme.textDim : "#6e7681")
                             anchors.verticalCenter: parent.verticalCenter
 
-                            SequentialAnimation {
-                                running: root.isPlaying
-                                loops: Animation.Infinite
-                                PauseAnimation { duration: eqBar.modelData.del }
-                                NumberAnimation {
-                                    target: eqBar
-                                    property: "height"
-                                    to: eqBar.modelData.maxH
-                                    duration: eqBar.modelData.dur
-                                    easing.type: Easing.InOutSine
-                                }
-                                NumberAnimation {
-                                    target: eqBar
-                                    property: "height"
-                                    to: eqBar.modelData.minH
-                                    duration: eqBar.modelData.dur
-                                    easing.type: Easing.InOutSine
-                                }
-                            }
+                            Behavior on height { NumberAnimation { duration: 60 } }
+                            Behavior on color { ColorAnimation { duration: 150 } }
                         }
                     }
                 }
