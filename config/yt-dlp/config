@@ -1,0 +1,2 @@
+# Use android client to bypass YouTube HTTP 403 Forbidden
+--extractor-args "youtube:player-client=android"

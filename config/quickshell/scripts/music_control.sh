@@ -8,7 +8,7 @@ if [ "$ACTION" = "quit" ]; then
     echo "{\"command\": [\"quit\"]}" | socat - "$SOCK" 2>/dev/null
     pkill -f "music_play.sh" 2>/dev/null
     sleep 0.05
-    pkill -9 -f "$SOCK" 2>/dev/null
+    pkill -9 -f "input-ipc-server=$SOCK" 2>/dev/null
     rm -f "$SOCK" "$STATE_FILE" 2>/dev/null
     exit 0
 fi
