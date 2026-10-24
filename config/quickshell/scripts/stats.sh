@@ -23,6 +23,13 @@ if [[ -f "$CACHE_FILE" ]]; then
 fi
 echo "$total $idle" > "$CACHE_FILE"
 
+# 1.5. RAM
+ram_pct=0
+if [[ -f /proc/meminfo ]]; then
+    ram_pct=$(awk '/MemTotal/{t=$2}/MemAvailable/{a=$2}END{if(t>0) print int((t-a)*100/t); else print 0}' /proc/meminfo 2>/dev/null)
+fi
+ram_pct=${ram_pct:-0}
+
 # 2. Batería
 bat_path=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -1)
 bat_pct=100
@@ -128,5 +135,5 @@ active_class=$(hyprctl activewindow -j 2>/dev/null | awk -F'"' '/"class":/ {prin
 active_class=${active_class:-"Desktop"}
 
 # Salida JSON limpia
-printf '{"cpu": %d, "bat": %d, "bat_status": "%s", "bat_time": "%s", "bat_detail": "%s", "wifi_ssid": "%s", "wifi_signal": %d, "bt": %s, "bt_device": "%s", "volume": %d, "vol_muted": %s, "brightness": %d, "active_app": "%s"}\n' \
-  "$cpu_pct" "$bat_pct" "$bat_status" "$bat_time" "$bat_detail" "$wifi_ssid" "$wifi_signal" "$bt_powered" "$bt_device" "$vol_pct" "$vol_muted" "$bri_pct" "$active_class"
+printf '{"cpu": %d, "ram": %d, "bat": %d, "bat_status": "%s", "bat_time": "%s", "bat_detail": "%s", "wifi_ssid": "%s", "wifi_signal": %d, "bt": %s, "bt_device": "%s", "volume": %d, "vol_muted": %s, "brightness": %d, "active_app": "%s"}\n' \
+  "$cpu_pct" "$ram_pct" "$bat_pct" "$bat_status" "$bat_time" "$bat_detail" "$wifi_ssid" "$wifi_signal" "$bt_powered" "$bt_device" "$vol_pct" "$vol_muted" "$bri_pct" "$active_class"

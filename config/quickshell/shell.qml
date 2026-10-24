@@ -170,31 +170,34 @@ ShellRoot {
             // Fondo 100% transparente para lograr el efecto flotante
             color: "transparent"
 
-            // MÁSCARA DE CLIC (solo la cápsula principal)
+            // MÁSCARA DE CLIC DINÁMICA (Tres cápsulas independientes + OSD)
             mask: Region {
-                item: topPanel.isFullscreen ? null : island
+                Region { item: topPanel.isFullscreen ? null : deck.leftPodCard }
+                Region { item: topPanel.isFullscreen ? null : deck.centerPodCard }
+                Region { item: topPanel.isFullscreen ? null : deck.rightPodCard }
+                Region { item: (topPanel.isFullscreen || !deck.subIslandOpen) ? null : deck.subCapsuleCard }
             }
 
-            // Efecto de desenfoque de fondo Wayland nativo (solo la cápsula superior de 30px, sin rectángulo alrededor del OSD)
+            // Efecto de desenfoque de fondo Wayland nativo para cada pod
             BackgroundEffect.blurRegion: Region {
-                item: topPanel.isFullscreen ? null : island
+                Region { item: topPanel.isFullscreen ? null : deck.leftPodCard }
+                Region { item: topPanel.isFullscreen ? null : deck.centerPodCard }
+                Region { item: topPanel.isFullscreen ? null : deck.rightPodCard }
+                Region { item: (topPanel.isFullscreen || !deck.subIslandOpen) ? null : deck.subCapsuleCard }
             }
 
             Connections {
                 target: root
                 function onOsdRequested(mode, val, muted) {
-                    island.showOsd(mode, val, muted);
+                    deck.showOsd(mode, val, muted);
                 }
             }
 
-            // Cápsula Dynamic Island flotante y centrada
-            DynamicIsland {
-                id: island
+            // Deck Superior Modular Tri-Pod
+            HyperUtilityDeck {
+                id: deck
                 theme: globalTheme
-
-                anchors.top: parent.top
-                anchors.topMargin: 4
-                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.fill: parent
 
                 onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
                 onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
