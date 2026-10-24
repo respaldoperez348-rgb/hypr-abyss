@@ -171,8 +171,10 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     visible: !root.trackCover || parent.children[0].status !== Image.Ready
-                    text: "🎵"
-                    font.pixelSize: 11
+                    text: "󰝚"
+                    font.family: root.theme ? root.theme.fontMono : "monospace"
+                    font.pixelSize: 12
+                    color: root.theme ? root.theme.accent : "#00ffcc"
                 }
 
                 MouseArea {
@@ -304,8 +306,9 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "⏮"
-                        font.pixelSize: 9
+                        text: "󰒮"
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                        font.pixelSize: 11
                         color: prevM.containsMouse ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.textDim : "#8b949e")
                     }
 
@@ -332,8 +335,9 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: root.isPlaying ? "⏸" : "▶"
-                        font.pixelSize: 9
+                        text: root.isPlaying ? "󰏤" : "󰐊"
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                        font.pixelSize: 11
                         color: root.theme ? root.theme.text : "#f0f6fc"
                     }
 
@@ -358,8 +362,9 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "⏭"
-                        font.pixelSize: 9
+                        text: "󰒭"
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                        font.pixelSize: 11
                         color: nextM.containsMouse ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.textDim : "#8b949e")
                     }
 

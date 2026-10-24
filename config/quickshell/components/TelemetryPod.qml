@@ -262,9 +262,9 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: parent.isCharging ? "⚡" : root.batVal.toString()
+                        text: parent.isCharging ? "󱐋" : root.batVal.toString()
                         font.family: root.theme ? root.theme.fontMono : "monospace"
-                        font.pixelSize: parent.isCharging ? 9 : 8
+                        font.pixelSize: parent.isCharging ? 10 : 8
                         font.bold: true
                         color: parent.isCharging ? "#00ffcc" : (root.batVal < 20 ? "#ff5555" : (root.theme ? root.theme.warning : "#ffb86c"))
                     }
@@ -312,24 +312,26 @@ Item {
             }
 
             // ----------------------------------------------------
-            // 3. Iconos Rápidos de Red y Sonido
+            // 3. Iconos Rápidos de Red y Sonido (Nerd Font)
             // ----------------------------------------------------
             Row {
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 5
+                spacing: 6
 
                 // WiFi
                 Text {
-                    text: root.wifiSsid !== "Disconnected" ? "📶" : "📡"
-                    font.pixelSize: 10
-                    opacity: root.wifiSsid !== "Disconnected" ? 1.0 : 0.5
+                    text: root.wifiSsid !== "Disconnected" ? "󰤨" : "󰤮"
+                    font.family: root.theme ? root.theme.fontMono : "monospace"
+                    font.pixelSize: 11
+                    color: root.wifiSsid !== "Disconnected" ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.textDim : "#6e7681")
                 }
 
                 // Audio
                 Text {
-                    text: root.volMuted ? "🔇" : (root.volumeVal > 50 ? "🔊" : "🔉")
-                    font.pixelSize: 10
-                    opacity: root.volMuted ? 0.6 : 1.0
+                    text: root.volMuted ? "󰕟" : (root.volumeVal > 50 ? "󰕾" : "󰖀")
+                    font.family: root.theme ? root.theme.fontMono : "monospace"
+                    font.pixelSize: 11
+                    color: root.volMuted ? "#ff5555" : (root.theme ? root.theme.text : "#f0f6fc")
                 }
             }
         }

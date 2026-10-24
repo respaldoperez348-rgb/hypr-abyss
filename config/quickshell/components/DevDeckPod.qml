@@ -24,8 +24,17 @@ Item {
     implicitHeight: card.height
     implicitWidth: card.width
 
-    // Lista de workspaces base
-    readonly property var wsList: [1, 2, 3, 4, 5, 6]
+    // Workspaces 1 a 8 con iconografía Cyberpunk / Nerd Font
+    readonly property var wsData: [
+        { id: 1, icon: "" },  // Arch / Base
+        { id: 2, icon: "󰖟" },  // Web
+        { id: 3, icon: "" },  // Code / Zed
+        { id: 4, icon: "󰭹" },  // Chat / Discord
+        { id: 5, icon: "󰝚" },  // Music
+        { id: 6, icon: "󰉋" },  // Files
+        { id: 7, icon: "󰘚" },  // Labs
+        { id: 8, icon: "󰒓" }   // Settings
+    ]
 
     // Proceso para Keep-Awake
     property bool keepAwakeActive: false
@@ -114,20 +123,21 @@ Item {
             spacing: 8
 
             // ----------------------------------------------------
-            // 1. Workspaces Interactivos (1 a 6)
+            // 1. Workspaces Interactivos (1 a 8 con Iconos Nerd Font)
             // ----------------------------------------------------
             Row {
                 id: wsRow
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 4
+                spacing: 3
 
                 Repeater {
-                    model: root.wsList
+                    model: root.wsData
 
                     delegate: Rectangle {
                         id: wsBtn
-                        required property int modelData
-                        property int wsId: modelData
+                        required property var modelData
+                        property int wsId: modelData.id
+                        property string wsIcon: modelData.icon
 
                         readonly property bool isFocused: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
                         readonly property bool isOccupied: {
@@ -138,14 +148,14 @@ Item {
                             return false;
                         }
 
-                        width: isFocused ? 22 : 16
+                        width: isFocused ? 24 : (wsBtnMouse.containsMouse ? 20 : (isOccupied ? 18 : 15))
                         height: 20
                         radius: 10
                         anchors.verticalCenter: parent.verticalCenter
 
                         color: isFocused
                                ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.28) : Qt.rgba(0, 1, 0.8, 0.28))
-                               : (wsBtnMouse.containsMouse ? (root.theme ? root.theme.surfaceHover : Qt.rgba(1, 1, 1, 0.10)) : "transparent")
+                               : (wsBtnMouse.containsMouse ? (root.theme ? root.theme.surfaceHover : Qt.rgba(1, 1, 1, 0.12)) : "transparent")
 
                         border.width: isFocused ? 1.2 : 0
                         border.color: root.theme ? root.theme.accent : "#00ffcc"
@@ -155,18 +165,18 @@ Item {
 
                         Text {
                             anchors.centerIn: parent
-                            text: wsBtn.wsId.toString()
+                            text: wsBtn.wsIcon
                             font.family: root.theme ? root.theme.fontMono : "monospace"
-                            font.pixelSize: 10
-                            font.bold: wsBtn.isFocused
+                            font.pixelSize: wsBtn.isFocused ? 13 : 11
                             color: wsBtn.isFocused
                                    ? (root.theme ? root.theme.accent : "#00ffcc")
                                    : (wsBtn.isOccupied
                                       ? (root.theme ? root.theme.text : "#f0f6fc")
-                                      : (root.theme ? root.theme.textDim : "#6e7681"))
+                                      : (root.theme ? root.theme.textDim : "#8b949e"))
+                            opacity: wsBtn.isFocused ? 1.0 : (wsBtn.isOccupied ? 0.95 : (wsBtnMouse.containsMouse ? 0.90 : 0.65))
                         }
 
-                        // Pequeño punto debajo si está ocupado
+                        // Pequeño punto neón debajo si está ocupado
                         Rectangle {
                             visible: wsBtn.isOccupied && !wsBtn.isFocused
                             width: 3
@@ -198,17 +208,17 @@ Item {
             }
 
             // ----------------------------------------------------
-            // 2. Herramientas Dev de 1 Toque
+            // 2. Herramientas Dev de 1 Toque (Iconografía Vectorial Nerd Font)
             // ----------------------------------------------------
             Row {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 5
 
-                // [ >_ ] Terminal Kitty
+                // [  ] Terminal Kitty
                 Rectangle {
                     width: 22
                     height: 22
-                    radius: 6
+                    radius: 7
                     color: termMouse.containsMouse ? Qt.rgba(0, 1, 0.8, 0.22) : (root.theme ? root.theme.surface : Qt.rgba(1, 1, 1, 0.05))
                     border.width: termMouse.containsMouse ? 1 : 0
                     border.color: root.theme ? root.theme.accent : "#00ffcc"
@@ -216,10 +226,9 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: ">_"
+                        text: ""
                         font.family: root.theme ? root.theme.fontMono : "monospace"
-                        font.pixelSize: 9
-                        font.bold: true
+                        font.pixelSize: 11
                         color: termMouse.containsMouse ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.text : "#f0f6fc")
                     }
 
@@ -232,11 +241,11 @@ Item {
                     }
                 }
 
-                // [ { } ] Editor Zed (Proyecto App Móvil)
+                // [ 󰨞 ] Editor Zed (Proyecto App Móvil)
                 Rectangle {
                     width: 22
                     height: 22
-                    radius: 6
+                    radius: 7
                     color: zedMouse.containsMouse ? Qt.rgba(0.74, 0.58, 0.98, 0.24) : (root.theme ? root.theme.surface : Qt.rgba(1, 1, 1, 0.05))
                     border.width: zedMouse.containsMouse ? 1 : 0
                     border.color: root.theme ? root.theme.accentAlt : "#bd93f9"
@@ -244,10 +253,9 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "{ }"
+                        text: "󰨞"
                         font.family: root.theme ? root.theme.fontMono : "monospace"
-                        font.pixelSize: 9
-                        font.bold: true
+                        font.pixelSize: 12
                         color: zedMouse.containsMouse ? (root.theme ? root.theme.accentAlt : "#bd93f9") : (root.theme ? root.theme.text : "#f0f6fc")
                     }
 
@@ -260,11 +268,11 @@ Item {
                     }
                 }
 
-                // [ ☕ ] Keep-Awake (Cafeína)
+                // [ 󰅶 ] Keep-Awake (Cafeína)
                 Rectangle {
                     width: 22
                     height: 22
-                    radius: 6
+                    radius: 7
                     color: root.keepAwakeActive
                            ? Qt.rgba(1.0, 0.72, 0.42, 0.30)
                            : (coffeeMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : (root.theme ? root.theme.surface : Qt.rgba(1, 1, 1, 0.05)))
@@ -276,8 +284,12 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "☕"
+                        text: root.keepAwakeActive ? "󰅶" : "󰒲"
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
                         font.pixelSize: 11
+                        color: root.keepAwakeActive
+                               ? (root.theme ? root.theme.warning : "#ffb86c")
+                               : (coffeeMouse.containsMouse ? (root.theme ? root.theme.text : "#f0f6fc") : (root.theme ? root.theme.textDim : "#6e7681"))
                     }
 
                     MouseArea {
@@ -292,11 +304,11 @@ Item {
                     }
                 }
 
-                // [ 📸 ] Capturador de Pantalla (Región)
+                // [ 󰄀 ] Capturador de Pantalla (Región)
                 Rectangle {
                     width: 22
                     height: 22
-                    radius: 6
+                    radius: 7
                     color: shotMouse.containsMouse ? Qt.rgba(0.31, 0.98, 0.48, 0.24) : (root.theme ? root.theme.surface : Qt.rgba(1, 1, 1, 0.05))
                     border.width: shotMouse.containsMouse ? 1 : 0
                     border.color: root.theme ? root.theme.cpuColor : "#50fa7b"
@@ -304,8 +316,10 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "📷"
-                        font.pixelSize: 10
+                        text: "󰄀"
+                        font.family: root.theme ? root.theme.fontMono : "monospace"
+                        font.pixelSize: 11
+                        color: shotMouse.containsMouse ? (root.theme ? root.theme.cpuColor : "#50fa7b") : (root.theme ? root.theme.text : "#f0f6fc")
                     }
 
                     MouseArea {
