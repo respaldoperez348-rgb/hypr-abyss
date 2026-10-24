@@ -73,6 +73,23 @@ ShellRoot {
         }
     }
 
+    // Control de apertura del Selector de Proyectos (Super + O)
+    property bool projectHubOpen: false
+
+    IpcHandler {
+        target: "projects"
+
+        function toggle(): void {
+            root.projectHubOpen = !root.projectHubOpen;
+        }
+        function open(): void {
+            root.projectHubOpen = true;
+        }
+        function close(): void {
+            root.projectHubOpen = false;
+        }
+    }
+
     // Control de apertura del Reproductor de Música Aura Music (Super + Y)
     property bool musicPlayerOpen: false
 
@@ -206,6 +223,7 @@ ShellRoot {
                     root.openControlCenterSection(sec);
                 }
                 onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
+                onOpenProjectHubRequested: root.projectHubOpen = !root.projectHubOpen
             }
         }
     }
@@ -479,6 +497,50 @@ ShellRoot {
             isOpen: root.musicPlayerOpen
             anchors.fill: parent
             onCloseRequested: root.musicPlayerOpen = false
+        }
+    }
+
+    // ==========================================
+    // 8. Selector y Gestor de Proyectos (Project Hub - Super + O)
+    // ==========================================
+    Variants {
+        id: projectHubVariants
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: projectHubPanel
+            property var modelData
+            screen: modelData
+
+            anchors {
+                top: true
+                bottom: true
+                left: true
+                right: true
+            }
+
+            visible: root.projectHubOpen
+
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: root.projectHubOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+            color: "transparent"
+
+            mask: Region {
+                item: projectHubContainer.card
+            }
+
+            BackgroundEffect.blurRegion: Region {
+                item: projectHubContainer.card
+            }
+
+            ProjectHub {
+                id: projectHubContainer
+                theme: globalTheme
+                isOpen: root.projectHubOpen
+                anchors.fill: parent
+                onCloseRequested: root.projectHubOpen = false
+            }
         }
     }
 }

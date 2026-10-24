@@ -45,6 +45,9 @@ hl.bind(mainMod .. " + U", hl.dsp.exec_cmd("kitty --class arch-updater --title '
 -- Atajo para Reproductor de Música (Super + Y)
 hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd("quickshell ipc call musicplayer toggle"))
 
+-- Atajo para Selector de Proyectos Hub (Super + O)
+hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("quickshell ipc call projects toggle"))
+
 -- Navegación con flechas
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
@@ -91,3 +94,10 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 
 -- Super + Clic Derecho (mouse:273): Cambiar el tamaño de la ventana con el ratón
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- ==============================================================================
+-- B.O.D.Y. — Esfera Holográfica (Super + Espacio o Alt + Espacio)
+-- ==============================================================================
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(home .. "/.local/bin/body --toggle"))
+hl.bind("ALT + SPACE", hl.dsp.exec_cmd(home .. "/.local/bin/body --toggle"))
+

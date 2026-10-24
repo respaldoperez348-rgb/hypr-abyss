@@ -18,6 +18,7 @@ Item {
     signal toggleControlCenterRequested()
     signal openControlCenterSectionRequested(string section)
     signal toggleMusicPlayerRequested()
+    signal openProjectHubRequested()
 
     // Control de OSD
     property bool osdActive: false
@@ -62,6 +63,7 @@ Item {
         anchors.leftMargin: 12
         anchors.top: parent.top
         anchors.topMargin: 4
+        onOpenProjectHubRequested: root.openProjectHubRequested()
     }
 
     // ==========================================

@@ -20,6 +20,7 @@ Item {
 
     property var theme
     readonly property Item podCard: card
+    signal openProjectHubRequested()
 
     implicitHeight: card.height
     implicitWidth: card.width
@@ -264,7 +265,14 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.launchCommand("zeditor \"$HOME/Documentos/APP MOVIL\" || zeditor &")
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onClicked: (mouse) => {
+                            if (mouse.button === Qt.RightButton) {
+                                root.launchCommand("zeditor \"$HOME/Proyectos\" || zeditor &");
+                            } else {
+                                root.openProjectHubRequested();
+                            }
+                        }
                     }
                 }
 
