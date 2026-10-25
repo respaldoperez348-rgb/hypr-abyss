@@ -17,7 +17,7 @@ hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(toggleZen))
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("hyprctl dispatch exit"))
 hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp)" - | swappy -f -'))
-hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("zeditor"))
+hl.bind(mainMod .. " + C", hl.dsp.exec_cmd(home .. "/.local/bin/quick-antigravity"))
 
 
 -- Captura directa de toda la pantalla al portapapeles con Super + Print
@@ -38,6 +38,9 @@ hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("quickshell ipc call powermenu toggle
 
 -- Atajo para mostrar/ocultar Reloj de Escritorio (Super + B)
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("quickshell ipc call clock toggle"))
+
+-- Atajo para alternar Estilo de Barra: Triple Deck <-> Dynamic Island (Super + Alt + B)
+hl.bind(mainMod .. " + ALT + B", hl.dsp.exec_cmd("quickshell ipc call bar toggle"))
 
 -- Atajo para Actualización Segura del Sistema (Super + U)
 hl.bind(mainMod .. " + U", hl.dsp.exec_cmd("kitty --class arch-updater --title 'Actualización del Sistema Arch Linux' -e " .. home .. "/.config/hypr/scripts/system_update.sh"))

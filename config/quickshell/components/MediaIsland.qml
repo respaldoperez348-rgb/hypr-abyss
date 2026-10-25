@@ -202,7 +202,7 @@ Item {
         id: eqBarComponent
         Rectangle {
             id: bar
-            property int minH: 3ento
+            property int minH: 3
             property int maxH: 14
             property int animDuration: 320
             property int delay: 0

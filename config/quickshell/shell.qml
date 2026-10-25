@@ -183,6 +183,55 @@ ShellRoot {
         }
     }
 
+    // Control de Estilo de Barra: "deck" (Hyper-Utility Glass Deck) o "island" (Dynamic Island 2.0)
+    property string barStyle: "deck"
+
+    function toggleBarStyle(): void {
+        setBarStyle(root.barStyle === "deck" ? "island" : "deck");
+    }
+
+    function setBarStyle(style: string): void {
+        if (style === "deck" || style === "island") {
+            root.barStyle = style;
+            saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/bar_manager.py", "set", style];
+            saveBarProc.running = false;
+            saveBarProc.running = true;
+        }
+    }
+
+    IpcHandler {
+        target: "bar"
+
+        function toggle(): void {
+            root.toggleBarStyle();
+        }
+        function set(style: string): void {
+            root.setBarStyle(style);
+        }
+    }
+
+    Process {
+        id: loadBarConfigProc
+        command: ["cat", Quickshell.env("HOME") + "/.config/quickshell/bar_config.json"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var data = JSON.parse(this.text);
+                    if (data.style === "deck" || data.style === "island") {
+                        root.barStyle = data.style;
+                    }
+                } catch (e) {}
+            }
+        }
+    }
+
+    Process {
+        id: saveBarProc
+        command: []
+        running: false
+    }
+
     // Señal e IPC para disparar el OSD de Volumen/Brillo en la Dynamic Island al instante
     signal osdRequested(string mode, int val, bool muted)
     signal openControlCenterSection(string section)
@@ -235,33 +284,48 @@ ShellRoot {
             // Fondo 100% transparente para lograr el efecto flotante
             color: "transparent"
 
-            // MÁSCARA DE CLIC DINÁMICA (Tres cápsulas independientes + OSD)
+            // MÁSCARA DE CLIC DINÁMICA (Deck Modular o Dynamic Island)
             mask: Region {
-                Region { item: topPanel.isFullscreen ? null : deck.leftPodCard }
-                Region { item: topPanel.isFullscreen ? null : deck.centerPodCard }
-                Region { item: topPanel.isFullscreen ? null : deck.rightPodCard }
-                Region { item: (topPanel.isFullscreen || !deck.subIslandOpen) ? null : deck.subCapsuleCard }
+                // Modo Deck
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck") ? null : deck.leftPodCard }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck") ? null : deck.centerPodCard }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck") ? null : deck.rightPodCard }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck" || !deck.subIslandOpen) ? null : deck.subCapsuleCard }
+
+                // Modo Island
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "island") ? null : island.mainCapsule }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "island" || !island.subIslandOpen) ? null : island.subCapsuleItem }
             }
 
-            // Efecto de desenfoque de fondo Wayland nativo para cada pod
+            // Efecto de desenfoque de fondo Wayland nativo
             BackgroundEffect.blurRegion: Region {
-                Region { item: topPanel.isFullscreen ? null : deck.leftPodCard }
-                Region { item: topPanel.isFullscreen ? null : deck.centerPodCard }
-                Region { item: topPanel.isFullscreen ? null : deck.rightPodCard }
-                Region { item: (topPanel.isFullscreen || !deck.subIslandOpen) ? null : deck.subCapsuleCard }
+                // Modo Deck
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck") ? null : deck.leftPodCard }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck") ? null : deck.centerPodCard }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck") ? null : deck.rightPodCard }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "deck" || !deck.subIslandOpen) ? null : deck.subCapsuleCard }
+
+                // Modo Island
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "island") ? null : island.mainCapsule }
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "island" || !island.subIslandOpen) ? null : island.subCapsuleItem }
             }
 
             Connections {
                 target: root
                 function onOsdRequested(mode, val, muted) {
-                    deck.showOsd(mode, val, muted);
+                    if (root.barStyle === "deck") {
+                        deck.showOsd(mode, val, muted);
+                    } else {
+                        island.showOsd(mode, val, muted);
+                    }
                 }
             }
 
-            // Deck Superior Modular Tri-Pod
+            // Barra Estilo 1: Deck Superior Modular Tri-Pod
             HyperUtilityDeck {
                 id: deck
                 theme: globalTheme
+                visible: root.barStyle === "deck"
                 anchors.fill: parent
 
                 onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
@@ -271,6 +335,20 @@ ShellRoot {
                 }
                 onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
                 onOpenProjectHubRequested: root.projectHubOpen = !root.projectHubOpen
+            }
+
+            // Barra Estilo 2: Cápsula Dynamic Island Flotante y Centrada
+            DynamicIsland {
+                id: island
+                theme: globalTheme
+                visible: root.barStyle === "island"
+
+                anchors.top: parent.top
+                anchors.topMargin: 4
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
+                onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
             }
         }
     }
@@ -358,8 +436,10 @@ ShellRoot {
                 id: ccContainer
                 theme: globalTheme
                 isOpen: root.controlCenterOpen
+                barStyle: root.barStyle
                 anchors.fill: parent
                 onCloseRequested: root.controlCenterOpen = false
+                onSetBarStyleRequested: (style) => root.setBarStyle(style)
 
                 Connections {
                     target: root

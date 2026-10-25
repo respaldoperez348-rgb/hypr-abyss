@@ -19,7 +19,9 @@ Item {
     property var theme
     property bool isOpen: false
     property bool isMouseInside: false
+    property string barStyle: "deck"
     signal closeRequested()
+    signal setBarStyleRequested(string style)
 
     implicitWidth: 300
     implicitHeight: 720
@@ -1535,6 +1537,148 @@ Item {
                                 onWheel: (wheel) => {
                                     var step = wheel.angleDelta.y > 0 ? 5 : -5;
                                     root.setSystemBrightness(root.brightnessPercent + step);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ==========================================
+            // BAR STYLE SWITCHER (Triple Deck vs Dynamic Island)
+            // ==========================================
+            Rectangle {
+                Layout.fillWidth: true
+                height: 52
+                radius: 12
+                color: Qt.rgba(0, 0, 0, 0.30)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.06)
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 7
+                    spacing: 4
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+
+                        Text {
+                            text: "󰨞"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 11
+                            color: root.theme ? root.theme.accent : "#00ffcc"
+                        }
+
+                        Text {
+                            text: "Estilo de Barra"
+                            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                            font.pixelSize: 9
+                            font.bold: true
+                            color: "#ffffff"
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Text {
+                            text: "Super+Alt+B"
+                            font.family: root.theme ? root.theme.fontFamily : "monospace"
+                            font.pixelSize: 8
+                            color: root.theme ? root.theme.textDim : "#6e7681"
+                        }
+                    }
+
+                    // Selector Segmentado de 2 Opciones
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 24
+                        radius: 8
+                        color: Qt.rgba(0, 0, 0, 0.40)
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.05)
+
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 2
+
+                            // Opción 1: Triple Deck
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: root.barStyle === "deck" 
+                                       ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.25) : Qt.rgba(0, 1, 0.8, 0.25))
+                                       : (optDeckMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                                border.width: root.barStyle === "deck" ? 1 : 0
+                                border.color: root.theme ? root.theme.accent : "#00ffcc"
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 4
+                                    Text {
+                                        text: "󰨞"
+                                        font.family: "JetBrainsMono Nerd Font"
+                                        font.pixelSize: 9
+                                        color: root.barStyle === "deck" ? (root.theme ? root.theme.accent : "#00ffcc") : "#888888"
+                                    }
+                                    Text {
+                                        text: "Triple Deck"
+                                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                        font.pixelSize: 8
+                                        font.bold: root.barStyle === "deck"
+                                        color: root.barStyle === "deck" ? "#ffffff" : "#888888"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: optDeckMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.setBarStyleRequested("deck")
+                                }
+                            }
+
+                            // Opción 2: Dynamic Island
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: root.barStyle === "island"
+                                       ? (root.theme ? Qt.rgba(root.theme.accentAlt.r, root.theme.accentAlt.g, root.theme.accentAlt.b, 0.25) : Qt.rgba(0.74, 0.58, 0.98, 0.25))
+                                       : (optIslandMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                                border.width: root.barStyle === "island" ? 1 : 0
+                                border.color: root.theme ? root.theme.accentAlt : "#bd93f9"
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 4
+                                    Text {
+                                        text: "󱐋"
+                                        font.family: "JetBrainsMono Nerd Font"
+                                        font.pixelSize: 9
+                                        color: root.barStyle === "island" ? (root.theme ? root.theme.accentAlt : "#bd93f9") : "#888888"
+                                    }
+                                    Text {
+                                        text: "Dynamic Island"
+                                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                        font.pixelSize: 8
+                                        font.bold: root.barStyle === "island"
+                                        color: root.barStyle === "island" ? "#ffffff" : "#888888"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: optIslandMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.setBarStyleRequested("island")
                                 }
                             }
                         }
