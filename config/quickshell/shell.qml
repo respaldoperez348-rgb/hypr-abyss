@@ -83,6 +83,7 @@ ShellRoot {
 
     // Control de apertura del Selector de Proyectos (Super + O)
     property bool projectHubOpen: false
+    signal openProjectHubConfigs()
 
     IpcHandler {
         target: "projects"
@@ -95,6 +96,10 @@ ShellRoot {
         }
         function close(): void {
             root.projectHubOpen = false;
+        }
+        function configs(): void {
+            root.projectHubOpen = true;
+            root.openProjectHubConfigs();
         }
     }
 
@@ -582,6 +587,13 @@ ShellRoot {
                 isOpen: root.projectHubOpen
                 anchors.fill: parent
                 onCloseRequested: root.projectHubOpen = false
+
+                Connections {
+                    target: root
+                    function onOpenProjectHubConfigs() {
+                        projectHubContainer.activeTab = "configs";
+                    }
+                }
             }
         }
     }

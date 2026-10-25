@@ -5,11 +5,13 @@ import Quickshell.Io
 
 /**
  * ProjectHub.qml
- * Menú Flotante Frosted Glass para gestión y lanzamiento de proyectos en ~/Proyectos.
- * - Lista proyectos dinámicamente con detección de tipo (Mobile, Node, Python, Quickshell) y rama Git.
- * - Filtro de búsqueda rápida en tiempo real.
- * - Clic para abrir directo en Zed, botón para abrir en Terminal Kitty o en Gestor de Archivos.
- * - Creador instantáneo de nuevos proyectos / carpetas con inicialización Git automática.
+ * Menú Flotante Frosted Glass para gestión y lanzamiento de:
+ * 1. Proyectos de desarrollo en ~/Proyectos
+ * 2. Configuraciones del sistema en ~/.config y dotfiles
+ * - Detección inteligente de tipo (Mobile, Node, Python, Quickshell, Dotfiles).
+ * - Filtro de búsqueda en tiempo real.
+ * - Acceso rápido para abrir en Editor (Antigravity/Zed), Terminal (Kitty) o Archivos (Thunar).
+ * - Creador instantáneo de nuevos proyectos con git init automático.
  */
 Item {
     id: root
@@ -20,9 +22,11 @@ Item {
 
     property alias card: hubCard
     property var projectList: []
+    property var configList: []
+    property string activeTab: "projects" // "projects" o "configs"
     property string searchQuery: ""
 
-    // Proceso para listar proyectos
+    // Proceso para listar proyectos y configuraciones
     Process {
         id: listProc
         command: [Quickshell.env("HOME") + "/.config/quickshell/scripts/projects_manager.py", "list"]
@@ -32,6 +36,7 @@ Item {
                 try {
                     var data = JSON.parse(this.text);
                     root.projectList = data.projects || [];
+                    root.configList = data.configs || [];
                 } catch (e) {}
             }
         }
@@ -57,7 +62,7 @@ Item {
     }
 
     function openProject(path, editor) {
-        actionProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/projects_manager.py", "open", path, editor || "zed"];
+        actionProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/projects_manager.py", "open", path, editor || "antigravity"];
         actionProc.running = true;
         root.closeRequested();
     }
@@ -92,8 +97,8 @@ Item {
     // ==========================================
     Rectangle {
         id: hubCard
-        width: 370
-        height: 480
+        width: 390
+        height: 520
         anchors.top: parent.top
         anchors.topMargin: 46
         anchors.left: parent.left
@@ -103,9 +108,12 @@ Item {
         color: root.theme ? root.theme.backgroundSolid : "#0d1117"
         opacity: root.isOpen ? 0.96 : 0.0
         border.width: 1.2
-        border.color: root.theme ? root.theme.accent : "#00ffcc"
+        border.color: root.activeTab === "projects"
+                      ? (root.theme ? root.theme.accent : "#00ffcc")
+                      : (root.theme ? root.theme.accentAlt : "#bd93f9")
         clip: true
 
+        Behavior on border.color { ColorAnimation { duration: 180 } }
         Behavior on opacity { NumberAnimation { duration: 180 } }
         transform: Translate {
             y: root.isOpen ? 0 : -16
@@ -119,8 +127,11 @@ Item {
             anchors.top: parent.top
             anchors.margins: 12
             height: 1.5
-            color: root.theme ? root.theme.accent : "#00ffcc"
-            opacity: 0.7
+            color: root.activeTab === "projects"
+                   ? (root.theme ? root.theme.accent : "#00ffcc")
+                   : (root.theme ? root.theme.accentAlt : "#bd93f9")
+            opacity: 0.8
+            Behavior on color { ColorAnimation { duration: 180 } }
         }
 
         // Prevenir que clics dentro de la tarjeta cierren el menú
@@ -145,16 +156,24 @@ Item {
                     width: 28
                     height: 28
                     radius: 8
-                    color: root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.20) : Qt.rgba(0, 1, 0.8, 0.20)
+                    color: root.activeTab === "projects"
+                           ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.20) : Qt.rgba(0, 1, 0.8, 0.20))
+                           : (root.theme ? Qt.rgba(root.theme.accentAlt.r, root.theme.accentAlt.g, root.theme.accentAlt.b, 0.20) : Qt.rgba(0.74, 0.58, 0.98, 0.20))
                     border.width: 1
-                    border.color: root.theme ? root.theme.accent : "#00ffcc"
+                    border.color: root.activeTab === "projects"
+                                  ? (root.theme ? root.theme.accent : "#00ffcc")
+                                  : (root.theme ? root.theme.accentAlt : "#bd93f9")
+
+                    Behavior on border.color { ColorAnimation { duration: 180 } }
 
                     Text {
                         anchors.centerIn: parent
-                        text: "󰨞"
+                        text: root.activeTab === "projects" ? "󰨞" : "󰒓"
                         font.family: root.theme ? root.theme.fontMono : "monospace"
                         font.pixelSize: 14
-                        color: root.theme ? root.theme.accent : "#00ffcc"
+                        color: root.activeTab === "projects"
+                               ? (root.theme ? root.theme.accent : "#00ffcc")
+                               : (root.theme ? root.theme.accentAlt : "#bd93f9")
                     }
                 }
 
@@ -163,7 +182,7 @@ Item {
                     spacing: 1
 
                     Text {
-                        text: "Project Hub"
+                        text: root.activeTab === "projects" ? "Project Hub" : "Config Hub"
                         font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                         font.pixelSize: 12
                         font.bold: true
@@ -171,14 +190,16 @@ Item {
                     }
 
                     Text {
-                        text: root.projectList.length + " proyectos en ~/Proyectos"
+                        text: root.activeTab === "projects"
+                              ? (root.projectList.length + " proyectos en ~/Proyectos")
+                              : (root.configList.length + " configuraciones en ~/.config")
                         font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                         font.pixelSize: 8
                         color: root.theme ? root.theme.textDim : "#8b949e"
                     }
                 }
 
-                // Botón abrir ~/Proyectos en explorador de archivos
+                // Botón abrir carpeta en explorador de archivos
                 Rectangle {
                     width: 26
                     height: 26
@@ -201,7 +222,10 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            root.openProject(Quickshell.env("HOME") + "/Proyectos", "files");
+                            var targetPath = root.activeTab === "projects"
+                                             ? (Quickshell.env("HOME") + "/Proyectos")
+                                             : (Quickshell.env("HOME") + "/.config");
+                            root.openProject(targetPath, "files");
                         }
                     }
                 }
@@ -231,7 +255,99 @@ Item {
             }
 
             // ----------------------------------------------------
-            // 2. Buscador Rápido de Proyectos
+            // 2. Selector de Pestañas: [ 󰨞 Proyectos ] [ 󰒓 Configs (.config) ]
+            // ----------------------------------------------------
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+
+                // Pestaña Proyectos
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 26
+                    radius: 8
+                    color: root.activeTab === "projects"
+                           ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.22) : Qt.rgba(0, 1, 0.8, 0.22))
+                           : Qt.rgba(1, 1, 1, 0.05)
+                    border.width: 1
+                    border.color: root.activeTab === "projects"
+                                  ? (root.theme ? root.theme.accent : "#00ffcc")
+                                  : "transparent"
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: "󰨞"
+                            font.family: root.theme ? root.theme.fontMono : "monospace"
+                            font.pixelSize: 11
+                            color: root.activeTab === "projects" ? (root.theme ? root.theme.accent : "#00ffcc") : "#8b949e"
+                        }
+                        Text {
+                            text: "Proyectos (" + root.projectList.length + ")"
+                            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                            font.pixelSize: 9
+                            font.bold: root.activeTab === "projects"
+                            color: root.activeTab === "projects" ? "#ffffff" : "#8b949e"
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.activeTab = "projects";
+                            searchInput.forceActiveFocus();
+                        }
+                    }
+                }
+
+                // Pestaña Configs (~/.config)
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 26
+                    radius: 8
+                    color: root.activeTab === "configs"
+                           ? (root.theme ? Qt.rgba(root.theme.accentAlt.r, root.theme.accentAlt.g, root.theme.accentAlt.b, 0.22) : Qt.rgba(0.74, 0.58, 0.98, 0.22))
+                           : Qt.rgba(1, 1, 1, 0.05)
+                    border.width: 1
+                    border.color: root.activeTab === "configs"
+                                  ? (root.theme ? root.theme.accentAlt : "#bd93f9")
+                                  : "transparent"
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: "󰒓"
+                            font.family: root.theme ? root.theme.fontMono : "monospace"
+                            font.pixelSize: 11
+                            color: root.activeTab === "configs" ? (root.theme ? root.theme.accentAlt : "#bd93f9") : "#8b949e"
+                        }
+                        Text {
+                            text: "Configs (.config)"
+                            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                            font.pixelSize: 9
+                            font.bold: root.activeTab === "configs"
+                            color: root.activeTab === "configs" ? "#ffffff" : "#8b949e"
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.activeTab = "configs";
+                            searchInput.forceActiveFocus();
+                        }
+                    }
+                }
+            }
+
+            // ----------------------------------------------------
+            // 3. Buscador en Tiempo Real
             // ----------------------------------------------------
             Rectangle {
                 Layout.fillWidth: true
@@ -239,7 +355,9 @@ Item {
                 radius: 8
                 color: Qt.rgba(0, 0, 0, 0.40)
                 border.width: 1
-                border.color: searchInput.activeFocus ? (root.theme ? root.theme.accent : "#00ffcc") : Qt.rgba(1, 1, 1, 0.10)
+                border.color: searchInput.activeFocus
+                              ? (root.activeTab === "projects" ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.accentAlt : "#bd93f9"))
+                              : Qt.rgba(1, 1, 1, 0.10)
 
                 Behavior on border.color { ColorAnimation { duration: 160 } }
 
@@ -253,7 +371,9 @@ Item {
                         text: ""
                         font.family: root.theme ? root.theme.fontMono : "monospace"
                         font.pixelSize: 10
-                        color: searchInput.activeFocus ? (root.theme ? root.theme.accent : "#00ffcc") : "#6e7681"
+                        color: searchInput.activeFocus
+                               ? (root.activeTab === "projects" ? (root.theme ? root.theme.accent : "#00ffcc") : (root.theme ? root.theme.accentAlt : "#bd93f9"))
+                               : "#6e7681"
                     }
 
                     TextInput {
@@ -269,7 +389,7 @@ Item {
                         Text {
                             anchors.fill: parent
                             visible: !searchInput.text && !searchInput.activeFocus
-                            text: "Filtrar proyecto..."
+                            text: root.activeTab === "projects" ? "Filtrar proyecto..." : "Filtrar configuración (.config, hypr, quickshell...)"
                             font: searchInput.font
                             color: "#6e7681"
                         }
@@ -278,7 +398,7 @@ Item {
             }
 
             // ----------------------------------------------------
-            // 3. Lista de Proyectos con Scroll
+            // 4. Lista Dinámica (Proyectos o Configuraciones)
             // ----------------------------------------------------
             Item {
                 Layout.fillWidth: true
@@ -299,10 +419,13 @@ Item {
 
                         Repeater {
                             model: {
-                                if (!root.searchQuery) return root.projectList;
-                                return root.projectList.filter(function(p) {
-                                    return p.name.toLowerCase().indexOf(root.searchQuery) !== -1 ||
-                                           p.type.toLowerCase().indexOf(root.searchQuery) !== -1;
+                                var currentList = (root.activeTab === "projects") ? root.projectList : root.configList;
+                                if (!root.searchQuery) return currentList;
+                                return currentList.filter(function(item) {
+                                    var nameMatch = item.name && item.name.toLowerCase().indexOf(root.searchQuery) !== -1;
+                                    var typeMatch = item.type && item.type.toLowerCase().indexOf(root.searchQuery) !== -1;
+                                    var descMatch = item.desc && item.desc.toLowerCase().indexOf(root.searchQuery) !== -1;
+                                    return nameMatch || typeMatch || descMatch;
                                 });
                             }
 
@@ -310,13 +433,15 @@ Item {
                                 id: projCard
                                 required property var modelData
                                 Layout.fillWidth: true
-                                height: 44
+                                height: 46
                                 radius: 10
                                 color: rowMouse.containsMouse
                                        ? (root.theme ? root.theme.surfaceHover : Qt.rgba(1, 1, 1, 0.10))
                                        : Qt.rgba(1, 1, 1, 0.04)
                                 border.width: rowMouse.containsMouse ? 1 : 0
-                                border.color: root.theme ? root.theme.accent : "#00ffcc"
+                                border.color: root.activeTab === "projects"
+                                              ? (root.theme ? root.theme.accent : "#00ffcc")
+                                              : (root.theme ? root.theme.accentAlt : "#bd93f9")
 
                                 Behavior on color { ColorAnimation { duration: 140 } }
 
@@ -326,16 +451,18 @@ Item {
                                     anchors.rightMargin: 8
                                     spacing: 8
 
-                                    // Icono del Tipo de Proyecto
+                                    // Icono del Tipo
                                     Rectangle {
-                                        width: 28
-                                        height: 28
+                                        width: 30
+                                        height: 30
                                         radius: 7
                                         color: {
-                                            if (modelData.type.indexOf("Mobile") !== -1) return Qt.rgba(0.74, 0.58, 0.98, 0.20);
-                                            if (modelData.type.indexOf("Node") !== -1) return Qt.rgba(0.31, 0.98, 0.48, 0.20);
-                                            if (modelData.type.indexOf("Python") !== -1) return Qt.rgba(1.0, 0.72, 0.42, 0.20);
-                                            if (modelData.type.indexOf("Quickshell") !== -1) return Qt.rgba(0, 1, 0.8, 0.20);
+                                            if (modelData.name.indexOf(".config") !== -1) return Qt.rgba(0, 1, 0.8, 0.22);
+                                            if (modelData.type && modelData.type.indexOf("Mobile") !== -1) return Qt.rgba(0.74, 0.58, 0.98, 0.20);
+                                            if (modelData.type && modelData.type.indexOf("Node") !== -1) return Qt.rgba(0.31, 0.98, 0.48, 0.20);
+                                            if (modelData.type && modelData.type.indexOf("Python") !== -1) return Qt.rgba(1.0, 0.72, 0.42, 0.20);
+                                            if (modelData.type && modelData.type.indexOf("Quickshell") !== -1) return Qt.rgba(0, 1, 0.8, 0.20);
+                                            if (modelData.type && modelData.type.indexOf("Window Manager") !== -1) return Qt.rgba(0, 0.75, 1, 0.20);
                                             return Qt.rgba(1, 1, 1, 0.08);
                                         }
 
@@ -345,19 +472,21 @@ Item {
                                             font.family: root.theme ? root.theme.fontMono : "monospace"
                                             font.pixelSize: 13
                                             color: {
-                                                if (modelData.type.indexOf("Mobile") !== -1) return "#bd93f9";
-                                                if (modelData.type.indexOf("Node") !== -1) return "#50fa7b";
-                                                if (modelData.type.indexOf("Python") !== -1) return "#ffb86c";
-                                                if (modelData.type.indexOf("Quickshell") !== -1) return "#00ffcc";
+                                                if (modelData.name.indexOf(".config") !== -1) return "#00ffcc";
+                                                if (modelData.type && modelData.type.indexOf("Mobile") !== -1) return "#bd93f9";
+                                                if (modelData.type && modelData.type.indexOf("Node") !== -1) return "#50fa7b";
+                                                if (modelData.type && modelData.type.indexOf("Python") !== -1) return "#ffb86c";
+                                                if (modelData.type && modelData.type.indexOf("Quickshell") !== -1) return "#00ffcc";
+                                                if (modelData.type && modelData.type.indexOf("Window Manager") !== -1) return "#57c7ff";
                                                 return "#f0f6fc";
                                             }
                                         }
                                     }
 
-                                    // Info: Nombre, Tipo y Rama
+                                    // Info: Nombre, Tipo / Descripción y Rama
                                     Column {
                                         Layout.fillWidth: true
-                                        spacing: 1
+                                        spacing: 2
 
                                         Text {
                                             text: modelData.name
@@ -372,10 +501,11 @@ Item {
                                         Row {
                                             spacing: 5
                                             Text {
-                                                text: modelData.type
+                                                text: modelData.desc ? modelData.desc : (modelData.type || "Proyecto")
                                                 font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                                 font.pixelSize: 8
                                                 color: root.theme ? root.theme.textDim : "#8b949e"
+                                                elide: Text.ElideRight
                                             }
 
                                             Text {
@@ -419,7 +549,31 @@ Item {
                                         spacing: 4
                                         visible: rowMouse.containsMouse
 
-                                        // Terminal en el proyecto
+                                        // Abrir en Zed
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: 6
+                                            color: zedBtnM.containsMouse ? (root.theme ? root.theme.accentAlt : "#bd93f9") : Qt.rgba(1, 1, 1, 0.10)
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "󰨞"
+                                                font.family: root.theme ? root.theme.fontMono : "monospace"
+                                                font.pixelSize: 10
+                                                color: zedBtnM.containsMouse ? "#0d1117" : "#f0f6fc"
+                                            }
+
+                                            MouseArea {
+                                                id: zedBtnM
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.openProject(modelData.path, "zed")
+                                            }
+                                        }
+
+                                        // Terminal en el directorio
                                         Rectangle {
                                             width: 22
                                             height: 22
@@ -443,7 +597,7 @@ Item {
                                             }
                                         }
 
-                                        // Abrir en explorador
+                                        // Abrir en explorador Thunar
                                         Rectangle {
                                             width: 22
                                             height: 22
@@ -469,13 +623,13 @@ Item {
                                     }
                                 }
 
-                                // Clic general abre en Zed
+                                // Clic general abre en Antigravity
                                 MouseArea {
                                     id: rowMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.openProject(modelData.path, "zed")
+                                    onClicked: root.openProject(modelData.path, "antigravity")
                                 }
                             }
                         }
@@ -484,72 +638,158 @@ Item {
             }
 
             // ----------------------------------------------------
-            // 4. Pie: Creador Rápido de Nuevo Proyecto / Carpeta
+            // 5. Pie Dinámico:
+            // - Pestaña Proyectos: Creador Rápido de Nuevo Proyecto
+            // - Pestaña Configs: Acceso Rápido a ~/.config completo y dotfiles
             // ----------------------------------------------------
-            Rectangle {
+            Item {
                 Layout.fillWidth: true
                 height: 38
-                radius: 10
-                color: Qt.rgba(0, 0, 0, 0.50)
-                border.width: 1
-                border.color: createInput.activeFocus ? (root.theme ? root.theme.accentAlt : "#bd93f9") : Qt.rgba(1, 1, 1, 0.08)
 
-                RowLayout {
+                // Pie de Proyectos
+                Rectangle {
+                    visible: root.activeTab === "projects"
                     anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 4
+                    radius: 10
+                    color: Qt.rgba(0, 0, 0, 0.50)
+                    border.width: 1
+                    border.color: createInput.activeFocus ? (root.theme ? root.theme.accentAlt : "#bd93f9") : Qt.rgba(1, 1, 1, 0.08)
 
-                    Text {
-                        text: "󰐕"
-                        font.family: root.theme ? root.theme.fontMono : "monospace"
-                        font.pixelSize: 12
-                        color: root.theme ? root.theme.accentAlt : "#bd93f9"
-                        Layout.leftMargin: 4
-                    }
-
-                    TextInput {
-                        id: createInput
-                        Layout.fillWidth: true
-                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                        font.pixelSize: 10
-                        color: "#ffffff"
-                        selectByMouse: true
-                        clip: true
-                        onAccepted: root.createProject(text)
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        spacing: 4
 
                         Text {
+                            text: "󰐕"
+                            font.family: root.theme ? root.theme.fontMono : "monospace"
+                            font.pixelSize: 12
+                            color: root.theme ? root.theme.accentAlt : "#bd93f9"
+                            Layout.leftMargin: 4
+                        }
+
+                        TextInput {
+                            id: createInput
+                            Layout.fillWidth: true
+                            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                            font.pixelSize: 10
+                            color: "#ffffff"
+                            selectByMouse: true
+                            clip: true
+                            onAccepted: root.createProject(text)
+
+                            Text {
+                                anchors.fill: parent
+                                visible: !createInput.text && !createInput.activeFocus
+                                text: "Nuevo proyecto o carpeta..."
+                                font: createInput.font
+                                color: "#6e7681"
+                            }
+                        }
+
+                        Rectangle {
+                            height: 28
+                            width: createBtnLabel.implicitWidth + 14
+                            radius: 6
+                            color: createBtnMouse.containsMouse ? (root.theme ? root.theme.accentAlt : "#bd93f9") : Qt.rgba(0.74, 0.58, 0.98, 0.20)
+                            border.width: 1
+                            border.color: root.theme ? root.theme.accentAlt : "#bd93f9"
+
+                            Text {
+                                id: createBtnLabel
+                                anchors.centerIn: parent
+                                text: "+ Crear"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 9
+                                font.bold: true
+                                color: createBtnMouse.containsMouse ? "#0d1117" : "#ffffff"
+                            }
+
+                            MouseArea {
+                                id: createBtnMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.createProject(createInput.text)
+                            }
+                        }
+                    }
+                }
+
+                // Pie de Configuraciones
+                RowLayout {
+                    visible: root.activeTab === "configs"
+                    anchors.fill: parent
+                    spacing: 6
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 34
+                        radius: 8
+                        color: openConfigAllM.containsMouse ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.25) : Qt.rgba(0, 1, 0.8, 0.25)) : Qt.rgba(1, 1, 1, 0.06)
+                        border.width: 1
+                        border.color: root.theme ? root.theme.accent : "#00ffcc"
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 5
+                            Text {
+                                text: "󰒓"
+                                font.family: root.theme ? root.theme.fontMono : "monospace"
+                                font.pixelSize: 11
+                                color: root.theme ? root.theme.accent : "#00ffcc"
+                            }
+                            Text {
+                                text: "Abrir ~/.config completo"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 9
+                                font.bold: true
+                                color: "#ffffff"
+                            }
+                        }
+
+                        MouseArea {
+                            id: openConfigAllM
                             anchors.fill: parent
-                            visible: !createInput.text && !createInput.activeFocus
-                            text: "Nuevo proyecto o carpeta..."
-                            font: createInput.font
-                            color: "#6e7681"
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.openProject(Quickshell.env("HOME") + "/.config", "antigravity")
                         }
                     }
 
                     Rectangle {
-                        height: 28
-                        width: createBtnLabel.implicitWidth + 14
-                        radius: 6
-                        color: createBtnMouse.containsMouse ? (root.theme ? root.theme.accentAlt : "#bd93f9") : Qt.rgba(0.74, 0.58, 0.98, 0.20)
+                        width: dotfilesBtnRow.implicitWidth + 14
+                        height: 34
+                        radius: 8
+                        color: openDotfilesM.containsMouse ? (root.theme ? Qt.rgba(root.theme.accentAlt.r, root.theme.accentAlt.g, root.theme.accentAlt.b, 0.25) : Qt.rgba(0.74, 0.58, 0.98, 0.25)) : Qt.rgba(1, 1, 1, 0.06)
                         border.width: 1
                         border.color: root.theme ? root.theme.accentAlt : "#bd93f9"
 
-                        Text {
-                            id: createBtnLabel
+                        Row {
+                            id: dotfilesBtnRow
                             anchors.centerIn: parent
-                            text: "+ Crear"
-                            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                            font.pixelSize: 9
-                            font.bold: true
-                            color: createBtnMouse.containsMouse ? "#0d1117" : "#ffffff"
+                            spacing: 4
+                            Text {
+                                text: ""
+                                font.family: root.theme ? root.theme.fontMono : "monospace"
+                                font.pixelSize: 11
+                                color: root.theme ? root.theme.accentAlt : "#bd93f9"
+                            }
+                            Text {
+                                text: "dotfiles"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                font.pixelSize: 9
+                                font.bold: true
+                                color: "#ffffff"
+                            }
                         }
 
                         MouseArea {
-                            id: createBtnMouse
+                            id: openDotfilesM
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.createProject(createInput.text)
+                            onClicked: root.openProject(Quickshell.env("HOME") + "/dotfiles", "antigravity")
                         }
                     }
                 }
