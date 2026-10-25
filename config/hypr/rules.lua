@@ -115,3 +115,20 @@ hl.window_rule({
     --workspace = "special:browser",
 --})
 
+-- Esfera Holográfica Nativa de B.O.D.Y. (Estilo J.A.R.V.I.S.)
+hl.window_rule({
+    name = "body-jarvis-floating",
+    match = { title = "^B\\.O\\.D\\.Y\\.$" },
+    float = true,
+    center = true,
+    pin = true,
+})
+
+-- Android Emulator: forzar flotante para que se adapte exactamente a las dimensiones del teléfono
+hl.window_rule({
+    name = "android-emulator-floating",
+    match = { class = ".*[Ee]mulator.*" },
+    float = true,
+})
+
+

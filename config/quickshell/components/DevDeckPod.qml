@@ -242,7 +242,7 @@ Item {
                     }
                 }
 
-                // [ 󰨞 ] Editor Zed (Proyecto App Móvil)
+                // [ 󰨞 ] Editor Antigravity
                 Rectangle {
                     width: 22
                     height: 22
@@ -268,7 +268,7 @@ Item {
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onClicked: (mouse) => {
                             if (mouse.button === Qt.RightButton) {
-                                root.launchCommand("zeditor \"$HOME/Proyectos\" || zeditor &");
+                                root.launchCommand("antigravity-ide \"$HOME/Proyectos\" || antigravity-ide &");
                             } else {
                                 root.openProjectHubRequested();
                             }
