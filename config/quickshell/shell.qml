@@ -183,20 +183,26 @@ ShellRoot {
         }
     }
 
-    // Control de Estilo de Barra: "deck" (Hyper-Utility Glass Deck) o "island" (Dynamic Island 2.0)
+    // Control de Setup Global: "deck" (Programación / Dev) o "island" (Diario / Casual)
     property string barStyle: "deck"
 
     function toggleBarStyle(): void {
-        setBarStyle(root.barStyle === "deck" ? "island" : "deck");
+        var nextMode = (root.barStyle === "deck") ? "daily" : "dev";
+        root.setSetupMode(nextMode);
     }
 
     function setBarStyle(style: string): void {
-        if (style === "deck" || style === "island") {
-            root.barStyle = style;
-            saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/bar_manager.py", "set", style];
-            saveBarProc.running = false;
-            saveBarProc.running = true;
-        }
+        root.barStyle = style;
+        saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/bar_manager.py", "set", style];
+        saveBarProc.running = false;
+        saveBarProc.running = true;
+    }
+
+    function setSetupMode(mode: string): void {
+        root.barStyle = (mode === "daily") ? "island" : "deck";
+        saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/setup_manager.py", "switch", mode];
+        saveBarProc.running = false;
+        saveBarProc.running = true;
     }
 
     IpcHandler {
@@ -207,6 +213,17 @@ ShellRoot {
         }
         function set(style: string): void {
             root.setBarStyle(style);
+        }
+    }
+
+    IpcHandler {
+        target: "setup"
+
+        function toggle(): void {
+            root.toggleBarStyle();
+        }
+        function set(mode: string): void {
+            root.setSetupMode(mode);
         }
     }
 
@@ -439,7 +456,7 @@ ShellRoot {
                 barStyle: root.barStyle
                 anchors.fill: parent
                 onCloseRequested: root.controlCenterOpen = false
-                onSetBarStyleRequested: (style) => root.setBarStyle(style)
+                onSetBarStyleRequested: (style) => root.setSetupMode(style === "island" ? "daily" : "dev")
 
                 Connections {
                     target: root

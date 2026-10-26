@@ -58,6 +58,12 @@ Item {
         }
     }
 
+    Process {
+        id: recordProfileWpProc
+        command: []
+        running: false
+    }
+
     Timer {
         id: appliedTimer
         interval: 1800
@@ -73,6 +79,9 @@ Item {
         root.justAppliedPath = path;
         applyProc.command = [Quickshell.env("HOME") + "/.config/hypr/scripts/wallchange.sh", path];
         applyProc.running = true;
+        recordProfileWpProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/setup_manager.py", "set-wp", path];
+        recordProfileWpProc.running = false;
+        recordProfileWpProc.running = true;
     }
 
     function applyRandom() {
