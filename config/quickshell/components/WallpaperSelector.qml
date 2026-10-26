@@ -42,8 +42,43 @@ Item {
             onStreamFinished: {
                 try {
                     root.allWallpapers = JSON.parse(this.text);
+                    if (root.selectedPath && root.allWallpapers.length > 0) {
+                        for (var i = 0; i < root.allWallpapers.length; i++) {
+                            if (root.allWallpapers[i].path === root.selectedPath) {
+                                if (typeof coverFlowView !== "undefined") {
+                                    coverFlowView.currentIndex = i;
+                                }
+                                break;
+                            }
+                        }
+                    }
                 } catch (e) {
                     console.log("[WallpaperSelector] Error parsing JSON:", e);
+                }
+            }
+        }
+    }
+
+    // Proceso para sincronizar el fondo activo del sistema
+    Process {
+        id: readCurrentWpProc
+        command: ["realpath", "-q", Quickshell.env("HOME") + "/.config/hypr/.cache/current_wallpaper.png"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var cur = this.text.trim();
+                if (cur.length > 0) {
+                    root.selectedPath = cur;
+                    if (root.allWallpapers && root.allWallpapers.length > 0) {
+                        for (var i = 0; i < root.allWallpapers.length; i++) {
+                            if (root.allWallpapers[i].path === cur) {
+                                if (typeof coverFlowView !== "undefined") {
+                                    coverFlowView.currentIndex = i;
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -97,6 +132,8 @@ Item {
     }
 
     function refresh() {
+        readCurrentWpProc.running = false;
+        readCurrentWpProc.running = true;
         if (!scanProc.running) {
             refreshRotation.restart();
             scanProc.running = true;
@@ -127,16 +164,85 @@ Item {
     onIsOpenChanged: {
         if (isOpen) {
             refresh();
-            searchInput.forceActiveFocus();
+            globalKeyHandler.forceActiveFocus();
+            if (root.barStyle === "island") {
+                searchInput.forceActiveFocus();
+            }
+        }
+    }
+
+    // 0. Fondo Oscuro Transparente para Cerrar al Hacer Clic Fuera (Modo Dev)
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        opacity: (root.isOpen && root.barStyle === "deck") ? 0.50 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.closeRequested()
+        }
+    }
+
+    // Capturador Global de Teclado
+    Item {
+        id: globalKeyHandler
+        anchors.fill: parent
+        focus: true
+
+        Keys.onEscapePressed: root.closeRequested()
+
+        Keys.onRightPressed: {
+            if (root.barStyle === "deck") {
+                if (coverFlowView.count > 0) coverFlowView.incrementCurrentIndex();
+            } else {
+                if (wallpaperList.count > 0) {
+                    wallpaperList.currentIndex = (wallpaperList.currentIndex + 1) % wallpaperList.count;
+                    wallpaperList.positionViewAtIndex(wallpaperList.currentIndex, ListView.Contain);
+                }
+            }
+        }
+
+        Keys.onDownPressed: Keys.onRightPressed(event)
+
+        Keys.onLeftPressed: {
+            if (root.barStyle === "deck") {
+                if (coverFlowView.count > 0) coverFlowView.decrementCurrentIndex();
+            } else {
+                if (wallpaperList.count > 0) {
+                    wallpaperList.currentIndex = (wallpaperList.currentIndex - 1 + wallpaperList.count) % wallpaperList.count;
+                    wallpaperList.positionViewAtIndex(wallpaperList.currentIndex, ListView.Contain);
+                }
+            }
+        }
+
+        Keys.onUpPressed: Keys.onLeftPressed(event)
+
+        Keys.onReturnPressed: {
+            if (root.barStyle === "deck") {
+                if (coverFlowView.count > 0 && coverFlowView.currentIndex >= 0 && coverFlowView.currentIndex < coverFlowView.count) {
+                    root.applyWallpaper(root.allWallpapers[coverFlowView.currentIndex].path);
+                }
+            } else {
+                if (wallpaperList.count > 0 && wallpaperList.currentIndex >= 0 && wallpaperList.currentIndex < wallpaperList.count) {
+                    root.applyWallpaper(root.filteredWallpapers[wallpaperList.currentIndex].path);
+                }
+            }
         }
     }
 
     // ==========================================
-    // Contenedor Visual Frosted Glass
+    // Contenedor Visual Frosted Glass (Modo Diario)
     // ==========================================
     Rectangle {
         id: panelCard
-        anchors.fill: parent
+        width: 880
+        height: 240
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 15
+        anchors.horizontalCenter: parent.horizontalCenter
+        visible: root.barStyle === "island"
 
         // Curvatura superior amplia como en la imagen
         topLeftRadius: 22
@@ -535,274 +641,12 @@ Item {
             }
 
             // ==========================================
-            // Carrusel CoverFlow 3D Neón (Modo Dev / Programación - Imagen 2)
-            // ==========================================
-            Item {
-                id: coverFlowContainer
-                Layout.fillWidth: true
-                Layout.preferredHeight: (root.barStyle === "deck") ? 190 : 0
-                visible: root.barStyle === "deck"
-                clip: true
-
-                PathView {
-                    id: coverFlowView
-                    anchors.fill: parent
-                    model: root.filteredWallpapers
-                    pathItemCount: Math.min(7, Math.max(1, root.filteredWallpapers.length))
-                    preferredHighlightBegin: 0.5
-                    preferredHighlightEnd: 0.5
-                    highlightRangeMode: PathView.StrictlyEnforceRange
-                    interactive: true
-                    clip: false
-
-                    // Desplazamiento por rueda de ratón en Coverflow
-                    MouseArea {
-                        anchors.fill: parent
-                        acceptedButtons: Qt.NoButton
-                        onWheel: function(wheel) {
-                            if (wheel.angleDelta.y < 0) {
-                                coverFlowView.incrementCurrentIndex();
-                            } else if (wheel.angleDelta.y > 0) {
-                                coverFlowView.decrementCurrentIndex();
-                            }
-                        }
-                    }
-
-                    path: Path {
-                        startX: 70
-                        startY: coverFlowContainer.height / 2 - 12
-
-                        PathAttribute { name: "itemZ"; value: 10 }
-                        PathAttribute { name: "itemScale"; value: 0.78 }
-                        PathAttribute { name: "itemAngle"; value: 34 }
-                        PathAttribute { name: "itemOpacity"; value: 0.55 }
-
-                        PathLine {
-                            x: coverFlowContainer.width / 2
-                            y: coverFlowContainer.height / 2 - 12
-                        }
-
-                        PathAttribute { name: "itemZ"; value: 100 }
-                        PathAttribute { name: "itemScale"; value: 1.25 }
-                        PathAttribute { name: "itemAngle"; value: 0 }
-                        PathAttribute { name: "itemOpacity"; value: 1.0 }
-
-                        PathLine {
-                            x: coverFlowContainer.width - 70
-                            y: coverFlowContainer.height / 2 - 12
-                        }
-
-                        PathAttribute { name: "itemZ"; value: 10 }
-                        PathAttribute { name: "itemScale"; value: 0.78 }
-                        PathAttribute { name: "itemAngle"; value: -34 }
-                        PathAttribute { name: "itemOpacity"; value: 0.55 }
-                    }
-
-                    delegate: Item {
-                        id: flowCard
-                        width: 200
-                        height: 115
-                        z: PathView.itemZ !== undefined ? PathView.itemZ : 0
-                        scale: PathView.itemScale !== undefined ? PathView.itemScale : 1.0
-                        opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : 1.0
-
-                        readonly property bool isCurrent: PathView.isCurrentItem
-                        readonly property var itemData: modelData
-                        readonly property bool isSelected: root.selectedPath === itemData.path
-                        readonly property bool isJustApplied: root.justAppliedPath === itemData.path
-
-                        transform: Rotation {
-                            origin.x: flowCard.width / 2
-                            origin.y: flowCard.height / 2
-                            axis { x: 0; y: 1; z: 0 }
-                            angle: PathView.itemAngle !== undefined ? PathView.itemAngle : 0
-                        }
-
-                        // Anillo Exterior Resplandeciente Neón (Magenta / Naranja Neón como en la Ref 2)
-                        Rectangle {
-                            visible: flowCard.isCurrent
-                            anchors.fill: parent
-                            anchors.margins: -7
-                            radius: 17
-                            color: "transparent"
-                            border.width: 2
-                            border.color: flowCard.isSelected ? "#00ffcc" : "#ff5577"
-                            opacity: 0.85
-
-                            SequentialAnimation on opacity {
-                                running: flowCard.isCurrent
-                                loops: Animation.Infinite
-                                NumberAnimation { to: 0.50; duration: 900; easing.type: Easing.InOutSine }
-                                NumberAnimation { to: 0.95; duration: 900; easing.type: Easing.InOutSine }
-                            }
-                        }
-
-                        // Anillo Interior Neón Cian Concéntrico
-                        Rectangle {
-                            visible: flowCard.isCurrent
-                            anchors.fill: parent
-                            anchors.margins: -3.5
-                            radius: 14
-                            color: "transparent"
-                            border.width: 1.5
-                            border.color: flowCard.isSelected ? "#50fa7b" : "#00ffcc"
-                        }
-
-                        // Tarjeta Principal con la Miniatura
-                        Rectangle {
-                            id: flowPreviewBox
-                            anchors.fill: parent
-                            radius: 11
-                            clip: true
-                            color: "#161b22"
-                            border.width: flowCard.isCurrent ? 2 : 1
-                            border.color: flowCard.isCurrent ? "#00ffcc" : Qt.rgba(1, 1, 1, 0.15)
-
-                            Image {
-                                anchors.fill: parent
-                                source: itemData.thumb
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                cache: true
-                                smooth: true
-                            }
-
-                            // Sombreado en tarjetas laterales
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "#000000"
-                                opacity: flowCard.isCurrent ? 0.0 : 0.40
-                            }
-
-                            // Badge de Formato en esquina superior derecha
-                            Rectangle {
-                                anchors.top: parent.top
-                                anchors.right: parent.right
-                                anchors.margins: 5
-                                height: 14
-                                width: flowBadgeRow.implicitWidth + 8
-                                radius: 4
-                                color: Qt.rgba(0, 0, 0, 0.75)
-                                border.width: 0.5
-                                border.color: Qt.rgba(255, 255, 255, 0.2)
-
-                                Row {
-                                    id: flowBadgeRow
-                                    anchors.centerIn: parent
-                                    spacing: 3
-
-                                    Text {
-                                        text: itemData.ext.toUpperCase()
-                                        font.family: "JetBrains Mono Nerd Font, monospace"
-                                        font.pixelSize: 8
-                                        font.bold: true
-                                        color: itemData.type === "animated" ? "#bd93f9" : "#ffffff"
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-                                }
-                            }
-
-                            // Badge de Aplicado / Activo
-                            Rectangle {
-                                visible: flowCard.isSelected
-                                anchors.bottom: parent.bottom
-                                anchors.right: parent.right
-                                anchors.margins: 5
-                                height: 16
-                                width: flowActiveRow.implicitWidth + 8
-                                radius: 8
-                                color: flowCard.isJustApplied ? "#50fa7b" : "#00ffcc"
-
-                                Row {
-                                    id: flowActiveRow
-                                    anchors.centerIn: parent
-                                    spacing: 3
-
-                                    Text {
-                                        text: flowCard.isJustApplied ? "APPLIED" : "ACTIVE"
-                                        font.family: "JetBrains Mono Nerd Font, monospace"
-                                        font.pixelSize: 8
-                                        font.bold: true
-                                        color: "#0d1117"
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-                                }
-                            }
-                        }
-
-                        // ==========================================
-                        // Píldora de Etiqueta Flotante Inferior (Imagen 2: "pastel-window")
-                        // ==========================================
-                        Item {
-                            visible: flowCard.isCurrent
-                            anchors.top: flowCard.bottom
-                            anchors.topMargin: 11
-                            anchors.horizontalCenter: flowCard.horizontalCenter
-                            width: labelCapsule.width
-                            height: labelCapsule.height
-                            z: 250
-
-                            Rectangle {
-                                id: labelCapsule
-                                width: labelRow.implicitWidth + 24
-                                height: 25
-                                radius: 12.5
-                                color: "#f00d1117"
-                                border.width: 1
-                                border.color: flowCard.isSelected ? "#00ffcc" : Qt.rgba(255, 85, 119, 0.5)
-
-                                Row {
-                                    id: labelRow
-                                    anchors.centerIn: parent
-                                    spacing: 6
-
-                                    // Indicador LED de foco
-                                    Rectangle {
-                                        width: 6
-                                        height: 6
-                                        radius: 3
-                                        color: flowCard.isSelected ? "#50fa7b" : (flowCard.itemData.type === "animated" ? "#bd93f9" : "#00ffcc")
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-
-                                    // Nombre del fondo sin extensión
-                                    Text {
-                                        text: flowCard.itemData.name.replace(/\.[^/.]+$/, "")
-                                        font.family: "JetBrains Mono Nerd Font, monospace"
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        color: "#f0f6fc"
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-                                }
-                            }
-                        }
-
-                        // Clic interactivo: centrar o aplicar
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (flowCard.isCurrent) {
-                                    root.applyWallpaper(flowCard.itemData.path);
-                                } else {
-                                    coverFlowView.currentIndex = index;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ==========================================
-            // Carrusel Horizontal Plano (Modo Diario / Zen - Lista)
+            // Carrusel Horizontal Dinámico de Miniaturas
             // ==========================================
             ListView {
                 id: wallpaperList
                 Layout.fillWidth: true
-                Layout.preferredHeight: (root.barStyle === "island") ? 132 : 0
-                visible: root.barStyle === "island"
+                Layout.preferredHeight: 132
                 orientation: ListView.Horizontal
                 spacing: 14
                 clip: true
@@ -1196,6 +1040,281 @@ Item {
                             color: root.theme ? root.theme.textDim : "#6e7681"
                             Layout.alignment: Qt.AlignVCenter
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // 3D CoverFlow Stage Flotante Grande (Modo Dev / Sin Fondo)
+    // ==========================================
+    Item {
+        id: coverFlowStage
+        width: Math.min(1480, root.width - 40)
+        height: 560
+        anchors.centerIn: parent
+        visible: root.barStyle === "deck" && (opacity > 0)
+
+        // Animación suave de apertura y cierre
+        scale: root.isOpen ? 1.0 : 0.92
+        opacity: root.isOpen ? 1.0 : 0.0
+        Behavior on scale { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 200 } }
+
+        // Manejo de rueda de ratón en toda el área
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            onWheel: function(wheel) {
+                if (wheel.angleDelta.y < 0) {
+                    coverFlowView.incrementCurrentIndex();
+                } else if (wheel.angleDelta.y > 0) {
+                    coverFlowView.decrementCurrentIndex();
+                }
+            }
+        }
+
+        PathView {
+            id: coverFlowView
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 480
+            clip: false
+            interactive: false
+            highlightMoveDuration: 280
+
+            model: root.allWallpapers
+            pathItemCount: Math.min(7, Math.max(1, root.allWallpapers.length))
+            preferredHighlightBegin: 0.5
+            preferredHighlightEnd: 0.5
+            highlightRangeMode: PathView.StrictlyEnforceRange
+
+            path: Path {
+                startX: 0
+                startY: 235
+
+                PathAttribute { name: "itemZ"; value: 1 }
+                PathAttribute { name: "itemScale"; value: 0.72 }
+                PathAttribute { name: "itemOpacity"; value: 0.35 }
+
+                PathLine { x: coverFlowView.width * 0.5; y: 235 }
+                PathAttribute { name: "itemZ"; value: 100 }
+                PathAttribute { name: "itemScale"; value: 1.26 }
+                PathAttribute { name: "itemOpacity"; value: 1.0 }
+
+                PathLine { x: coverFlowView.width; y: 235 }
+                PathAttribute { name: "itemZ"; value: 1 }
+                PathAttribute { name: "itemScale"; value: 0.72 }
+                PathAttribute { name: "itemOpacity"; value: 0.35 }
+            }
+
+            delegate: Item {
+                id: flowCard
+                width: 420
+                height: 260
+                z: PathView.itemZ !== undefined ? PathView.itemZ : (isSelected ? 100 : 1)
+                scale: PathView.itemScale !== undefined ? PathView.itemScale : (isSelected ? 1.26 : 0.72)
+                opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : (isSelected ? 1.0 : 0.35)
+
+                readonly property bool isSelected: PathView.isCurrentItem
+                readonly property bool isActiveWp: root.selectedPath === modelData.path
+
+                // Anillo exterior de resplandor neón concéntrico (exacto a la imagen del usuario)
+                Rectangle {
+                    id: outerGlowRing
+                    anchors.fill: parent
+                    anchors.margins: -8
+                    radius: 20
+                    color: "transparent"
+                    border.width: flowCard.isSelected ? 2.5 : 0
+                    border.color: "#00ffcc"
+                    opacity: flowCard.isSelected ? 0.95 : 0.0
+
+                    Behavior on opacity { NumberAnimation { duration: 220 } }
+                }
+
+                // Tarjeta Principal
+                Rectangle {
+                    id: innerCard
+                    anchors.fill: parent
+                    radius: 14
+                    color: "#0d1117"
+                    border.width: flowCard.isSelected ? 1.5 : 1
+                    border.color: flowCard.isSelected ? "#00ffcc" : Qt.rgba(1, 1, 1, 0.15)
+                    clip: true
+
+                    Image {
+                        id: cardImg
+                        anchors.fill: parent
+                        source: modelData.thumb ? modelData.thumb : ("file://" + modelData.path)
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        sourceSize.width: 640
+                        sourceSize.height: 400
+                    }
+
+                    // Tinte oscuro de contraste para que resalte la activa
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "#000000"
+                        opacity: flowCard.isSelected ? 0.06 : 0.45
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                    }
+
+                    // Badge de Extensión / Formato en esquina superior derecha
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.margins: 10
+                        height: 18
+                        width: extText.implicitWidth + 12
+                        radius: 5
+                        color: Qt.rgba(0, 0, 0, 0.75)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.22)
+
+                        Text {
+                            id: extText
+                            anchors.centerIn: parent
+                            text: modelData.ext ? modelData.ext.toUpperCase() : "IMG"
+                            font.family: "JetBrains Mono", "sans-serif"
+                            font.pixelSize: 9
+                            font.bold: true
+                            color: "#ffffff"
+                        }
+                    }
+
+                    // Badge ACTIVE en esquina inferior derecha (idéntico a la imagen)
+                    Rectangle {
+                        id: activeBadge
+                        anchors.bottom: parent.bottom
+                        anchors.right: parent.right
+                        anchors.margins: 12
+                        height: 24
+                        width: activeText.implicitWidth + 18
+                        radius: 6
+                        color: "#00ffcc"
+                        visible: flowCard.isSelected && flowCard.isActiveWp
+
+                        Text {
+                            id: activeText
+                            anchors.centerIn: parent
+                            text: "ACTIVE"
+                            font.family: "JetBrains Mono", "sans-serif"
+                            font.pixelSize: 11
+                            font.bold: true
+                            color: "#0d1117"
+                        }
+                    }
+
+                    // Badge de Aplicar si no es la activa pero está seleccionada
+                    Rectangle {
+                        id: applyBadge
+                        anchors.bottom: parent.bottom
+                        anchors.right: parent.right
+                        anchors.margins: 12
+                        height: 24
+                        width: applyText.implicitWidth + 16
+                        radius: 6
+                        color: Qt.rgba(0, 255, 204, 0.22)
+                        border.width: 1
+                        border.color: "#00ffcc"
+                        visible: flowCard.isSelected && !flowCard.isActiveWp
+
+                        Text {
+                            id: applyText
+                            anchors.centerIn: parent
+                            text: "APPLY ⏎"
+                            font.family: "JetBrains Mono", "sans-serif"
+                            font.pixelSize: 10
+                            font.bold: true
+                            color: "#00ffcc"
+                        }
+                    }
+                }
+
+                // Interacción táctil / clic
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: {
+                        if (flowCard.isSelected) {
+                            root.applyWallpaper(modelData.path);
+                        } else {
+                            coverFlowView.currentIndex = index;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Píldora Flotante Inferior de Título (exacta a la imagen)
+        Rectangle {
+            id: floatingTitlePill
+            anchors.top: coverFlowView.bottom
+            anchors.topMargin: 20
+            anchors.horizontalCenter: parent.horizontalCenter
+            height: 34
+            width: pillRow.implicitWidth + 34
+            radius: 17
+            color: "#f00d1117"
+            border.width: 1.5
+            border.color: "#00ffcc"
+
+            Row {
+                id: pillRow
+                anchors.centerIn: parent
+                spacing: 9
+
+                // Punto Neón Verde / Cian
+                Rectangle {
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: "#00ffcc"
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 14
+                        height: 14
+                        radius: 7
+                        color: "transparent"
+                        border.width: 1.2
+                        border.color: "#00ffcc"
+                        opacity: 0.55
+                    }
+                }
+
+                // Nombre del Fondo
+                Text {
+                    id: pillTitleText
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: {
+                        if (coverFlowView.count > 0 && coverFlowView.currentIndex >= 0 && coverFlowView.currentIndex < coverFlowView.count) {
+                            var item = root.allWallpapers[coverFlowView.currentIndex];
+                            return item ? item.name : "";
+                        }
+                        return "";
+                    }
+                    font.family: "JetBrains Mono"
+                    font.pixelSize: 13
+                    font.bold: true
+                    color: "#f0f6fc"
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                onClicked: {
+                    if (coverFlowView.count > 0 && coverFlowView.currentIndex >= 0 && coverFlowView.currentIndex < coverFlowView.count) {
+                        root.applyWallpaper(root.allWallpapers[coverFlowView.currentIndex].path);
                     }
                 }
             }

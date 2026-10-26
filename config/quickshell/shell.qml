@@ -383,34 +383,24 @@ ShellRoot {
             screen: modelData
 
             anchors {
+                top: true
                 bottom: true
                 left: true
                 right: true
             }
 
-            implicitHeight: root.wallpaperOpen ? (root.barStyle === "deck" ? 315 : 245) : 0
-            visible: implicitHeight > 0
+            color: "transparent"
+            visible: root.wallpaperOpen
 
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: root.wallpaperOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-
-            color: "transparent"
-
-            mask: Region {
-                item: selectorContainer
-            }
-
-            BackgroundEffect.blurRegion: Region {
-                item: selectorContainer
-            }
 
             WallpaperSelector {
                 id: selectorContainer
                 theme: globalTheme
                 isOpen: root.wallpaperOpen
                 barStyle: root.barStyle
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.fill: parent
                 onCloseRequested: root.wallpaperOpen = false
             }
         }
