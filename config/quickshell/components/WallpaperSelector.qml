@@ -171,18 +171,11 @@ Item {
         }
     }
 
-    // 0. Fondo Oscuro Transparente para Cerrar al Hacer Clic Fuera (Modo Dev)
-    Rectangle {
+    // 0. Clic exterior para cerrar (completamente transparente, sin tapar la pantalla)
+    MouseArea {
         anchors.fill: parent
-        color: "#000000"
-        opacity: (root.isOpen && root.barStyle === "deck") ? 0.50 : 0.0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 200 } }
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.closeRequested()
-        }
+        visible: root.isOpen && root.barStyle === "deck"
+        onClicked: root.closeRequested()
     }
 
     // Capturador Global de Teclado
