@@ -16,6 +16,39 @@ def get_style():
             pass
     return "deck"
 
+def link_file(src: Path, dst: Path):
+    if src.exists():
+        try:
+            if dst.is_symlink() or dst.exists():
+                dst.unlink()
+            dst.symlink_to(src)
+        except Exception:
+            pass
+
+def sync_environment(style):
+    home = Path.home()
+    is_dev = (style == "deck")
+    
+    # 1. Rofi Launcher Switch
+    rofi_mode = "config-dev.rasi" if is_dev else "config-daily.rasi"
+    link_file(home / ".config" / "rofi" / rofi_mode, home / ".config" / "rofi" / "config.rasi")
+
+    # 2. Fastfetch Specs Switch
+    ff_mode = "config-dev.jsonc" if is_dev else "config-daily.jsonc"
+    link_file(home / ".config" / "fastfetch" / ff_mode, home / ".config" / "fastfetch" / "config.jsonc")
+
+    # 3. GTK 3 CSS Switch
+    gtk_css_mode = "gtk-dev.css" if is_dev else "gtk-daily.css"
+    link_file(home / ".config" / "gtk-3.0" / gtk_css_mode, home / ".config" / "gtk-3.0" / "gtk.css")
+
+    # 4. Hyprland Borders & Rounding
+    if is_dev:
+        os.system("hyprctl keyword decoration:rounding 8 >/dev/null 2>&1")
+        os.system("hyprctl keyword general:border_size 2 >/dev/null 2>&1")
+    else:
+        os.system("hyprctl keyword decoration:rounding 16 >/dev/null 2>&1")
+        os.system("hyprctl keyword general:border_size 1 >/dev/null 2>&1")
+
 def set_style(style):
     if style not in ["deck", "island", "notch"]:
         style = "deck"
@@ -24,6 +57,7 @@ def set_style(style):
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     os.system(f"quickshell ipc call bar set {style} >/dev/null 2>&1")
+    sync_environment(style)
     return style
 
 def toggle_style():
