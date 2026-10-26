@@ -48,7 +48,7 @@ imagebox {
     width:                      310px;
     expand:                     false;
     border-radius:              12px;
-    background-image:           url("~/.config/rofi/assets/launcher_banner.jpg", height);
+    background-image:           url("~/.config/rofi/assets/current_wallpaper.jpg", height);
     padding:                    14px;
     children:                   [ textbox-app-title, dummy ];
 }

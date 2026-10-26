@@ -67,6 +67,12 @@ wal -i "$wal_target" -n -q -s -t -e 2>/dev/null || true
 mkdir -p "$HOME/.config/hypr/.cache"
 ln -sf "$wal_target" "$HOME/.config/hypr/.cache/current_wallpaper.png"
 
+# Sincronizar banner vertical de Rofi con el wallpaper actual
+mkdir -p "$HOME/.config/rofi/assets"
+rm -f "$HOME/.config/rofi/assets/current_wallpaper.jpg"
+real_img="$(realpath -q "$wal_target" 2>/dev/null || echo "$wal_target")"
+magick "$real_img" -resize "600x900^" -gravity center -extent 600x900 "$HOME/.config/rofi/assets/current_wallpaper.jpg" 2>/dev/null || cp "$real_img" "$HOME/.config/rofi/assets/current_wallpaper.jpg" 2>/dev/null || true
+
 # 6. Recargar colores en caliente en Kitty con timeout estricto para evitar retrasos de inicio
 if pgrep -x kitty >/dev/null; then
     timeout 0.2s kitty @ --to unix:@mykitty set-colors --all "$HOME/.cache/wal/colors-kitty.conf" 2>/dev/null || true
