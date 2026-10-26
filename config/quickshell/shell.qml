@@ -388,7 +388,7 @@ ShellRoot {
                 right: true
             }
 
-            implicitHeight: root.wallpaperOpen ? 245 : 0
+            implicitHeight: root.wallpaperOpen ? (root.barStyle === "deck" ? 315 : 245) : 0
             visible: implicitHeight > 0
 
             WlrLayershell.layer: WlrLayer.Overlay
@@ -408,6 +408,7 @@ ShellRoot {
                 id: selectorContainer
                 theme: globalTheme
                 isOpen: root.wallpaperOpen
+                barStyle: root.barStyle
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 onCloseRequested: root.wallpaperOpen = false
@@ -561,6 +562,7 @@ ShellRoot {
                 id: powerMenuContainer
                 theme: globalTheme
                 isOpen: root.powerMenuOpen
+                barStyle: root.barStyle
                 anchors.fill: parent
                 onCloseRequested: root.powerMenuOpen = false
             }

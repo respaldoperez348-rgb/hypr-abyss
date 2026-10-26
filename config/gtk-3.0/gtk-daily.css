@@ -1,0 +1,58 @@
+/* ==============================================================================
+ * Daily / Zen Light Frosted Aesthetic for Thunar (GTK 3)
+ * ============================================================================== */
+
+window.thunar,
+.thunar-window {
+    background-color: #f6f8fa;
+    color: #24292f;
+}
+
+window.thunar .view,
+window.thunar .standard-view,
+window.thunar treeview,
+window.thunar iconview,
+window.thunar scrolledwindow {
+    background-color: #ffffff;
+    color: #24292f;
+}
+
+window.thunar .sidebar,
+window.thunar .sidebar treeview {
+    background-color: #f0f2f5;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    color: #57606a;
+}
+
+window.thunar .sidebar:selected,
+window.thunar .sidebar treeview:selected {
+    background-color: rgba(9, 105, 218, 0.12);
+    color: #0969da;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+window.thunar headerbar,
+window.thunar toolbar,
+window.thunar menubar {
+    background-color: #f6f8fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    color: #24292f;
+}
+
+window.thunar entry,
+window.thunar .path-bar {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    color: #24292f;
+}
+
+window.thunar .view:selected,
+window.thunar treeview:selected,
+window.thunar iconview:selected {
+    background-color: rgba(9, 105, 218, 0.18);
+    color: #0969da;
+    border: 1px solid rgba(9, 105, 218, 0.5);
+    border-radius: 8px;
+}

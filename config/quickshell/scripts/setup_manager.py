@@ -143,7 +143,17 @@ def apply_profile(profile_key):
     run_quiet(["kitty", "@", "--to", "unix:@mykitty", "set-colors", "--all", str(kitty_dst)])
     run_quiet(["kitty", "@", "--to", "unix:@mykitty", "set-background-opacity", opacity])
 
-    # 4. GTK & Thunar Icons y Tema (GSettings + XFConf + INI)
+    # 4. Hyprlock Lockscreen Switch (Symlink)
+    hl_src = home / ".config" / "hypr" / "lockscreens" / prof.get("hyprlock_config", "hyprlock-dev.conf")
+    hl_dst = home / ".config" / "hypr" / "hyprlock.conf"
+    link_file(hl_src, hl_dst)
+
+    # 5. GTK 3 CSS Switch (Symlink)
+    gtk_css_src = home / ".config" / "gtk-3.0" / prof.get("gtk_css", "gtk-dev.css")
+    gtk_css_dst = home / ".config" / "gtk-3.0" / "gtk.css"
+    link_file(gtk_css_src, gtk_css_dst)
+
+    # 6. GTK & Thunar Icons y Tema (GSettings + XFConf + INI)
     gtk_theme = prof.get("gtk_theme", "adw-gtk3-dark")
     icon_theme = prof.get("icon_theme", "Tela-circle-dracula-dark")
     color_scheme = prof.get("color_scheme", "prefer-dark")
@@ -157,7 +167,7 @@ def apply_profile(profile_key):
     run_quiet(["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme])
     update_gtk_settings_ini(gtk_theme, icon_theme, prefer_dark)
 
-    # 5. Hyprland Rounding, Bordes y Opacidad en Caliente
+    # 7. Hyprland Rounding, Bordes y Opacidad en Caliente
     run_quiet(["hyprctl", "keyword", "decoration:rounding", str(prof.get("hypr_rounding", 10))])
     run_quiet(["hyprctl", "keyword", "decoration:active_opacity", str(prof.get("hypr_opacity", "0.90"))])
     run_quiet(["hyprctl", "keyword", "general:border_size", str(prof.get("hypr_border_size", 2))])

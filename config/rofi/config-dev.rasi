@@ -1,13 +1,17 @@
 /**
- * Rofi - Modo Programación (Cyberpunk Cockpit Launcher)
+ * Rofi Dual-Pane Developer Launcher
+ * Inspirado exactamente en la arquitectura de la Imagen 3:
+ * - Panel izquierdo: Banner artístico anime vertical con chip "• APPLICATIONS"
+ * - Panel derecho: Buscador con lupa, chips de categorías, lista con icono + título + descripción, y footer
  */
 
 configuration {
-    modi:                       "drun,run";
+    modi:                       "drun,run,filebrowser";
     show-icons:                 true;
-    display-drun:               " DEV";
-    display-run:                " RUN";
-    drun-display-format:        "{name}";
+    display-drun:               "All";
+    display-run:                "Development";
+    display-filebrowser:        "Files";
+    drun-display-format:        "{name}\n<span size='small' weight='light' alpha='65%'>{generic}</span>";
     font:                       "JetBrainsMono Nerd Font 10";
     icon-theme:                 "Tela-circle-dracula-dark";
 }
@@ -19,86 +23,196 @@ configuration {
 }
 
 window {
-    width:                      460px;
-    border:                     2px;
-    border-color:               #00ffcc;
-    border-radius:              10px;
-    background-color:           rgba(10, 14, 20, 0.92);
-    padding:                    12px;
+    width:                      820px;
+    height:                     510px;
+    border:                     1.5px;
+    border-color:               rgba(88, 166, 255, 0.35);
+    border-radius:              16px;
+    background-color:           rgba(14, 18, 26, 0.94);
+    padding:                    14px;
     anchor:                     center;
     location:                   center;
 }
 
 mainbox {
-    spacing:                    8px;
-    children:                   [ inputbar, listview ];
+    orientation:                horizontal;
+    spacing:                    18px;
+    children:                   [ imagebox, rightbox ];
+}
+
+/* ==============================================================================
+   PANEL IZQUIERDO: ILUSTRACIÓN ARTÍSTICA VERTICAL
+   ============================================================================== */
+imagebox {
+    orientation:                vertical;
+    width:                      310px;
+    expand:                     false;
+    border-radius:              12px;
+    background-image:           url("~/.config/rofi/assets/launcher_banner.jpg", height);
+    padding:                    14px;
+    children:                   [ textbox-app-title, dummy ];
+}
+
+textbox-app-title {
+    expand:                     false;
+    str:                        "•  APPLICATIONS";
+    text-color:                 #58a6ff;
+    font:                       "JetBrainsMono Nerd Font Bold 9.5";
+    padding:                    4px 10px;
+    border-radius:              6px;
+    background-color:           rgba(10, 14, 20, 0.75);
+}
+
+dummy {
+    expand:                     true;
+}
+
+/* ==============================================================================
+   PANEL DERECHO: BUSCADOR, CATEGORÍAS, LISTA Y FOOTER
+   ============================================================================== */
+rightbox {
+    orientation:                vertical;
+    spacing:                    10px;
+    expand:                     true;
+    children:                   [ inputbar, mode-switcher, listview, footer ];
 }
 
 inputbar {
-    background-color:           rgba(16, 22, 34, 0.85);
-    border-radius:              8px;
+    background-color:           rgba(22, 28, 40, 0.85);
+    border-radius:              10px;
     border:                     1px;
-    border-color:               rgba(0, 255, 204, 0.35);
-    padding:                    7px 11px;
-    spacing:                    8px;
-    children:                   [ prompt, entry ];
+    border-color:               rgba(255, 255, 255, 0.08);
+    padding:                    7px 12px;
+    spacing:                    10px;
+    children:                   [ textbox-search, entry, textbox-palette ];
 }
 
-prompt {
-    text-color:                 #00ffcc;
-    font-size:                  11px;
-    font-weight:                bold;
+textbox-search {
+    expand:                     false;
+    str:                        "";
+    text-color:                 #58a6ff;
     vertical-align:             0.5;
+    font:                       "JetBrainsMono Nerd Font 11";
 }
 
 entry {
     text-color:                 #f0f6fc;
-    placeholder:                "Comando de desarrollo o app...";
-    placeholder-color:          rgba(0, 255, 204, 0.30);
+    placeholder:                "Type to search...";
+    placeholder-color:          rgba(255, 255, 255, 0.35);
     vertical-align:             0.5;
 }
 
+textbox-palette {
+    expand:                     false;
+    str:                        "󰏘";
+    text-color:                 rgba(255, 255, 255, 0.40);
+    vertical-align:             0.5;
+    font:                       "JetBrainsMono Nerd Font 11";
+}
+
+/* Chips de categorías */
+mode-switcher {
+    spacing:                    8px;
+    expand:                     false;
+}
+
+button {
+    padding:                    4px 14px;
+    border-radius:              14px;
+    background-color:           rgba(255, 255, 255, 0.06);
+    text-color:                 rgba(255, 255, 255, 0.65);
+    font:                       "JetBrainsMono Nerd Font 9";
+    cursor:                     pointer;
+}
+
+button selected {
+    background-color:           rgba(56, 139, 253, 0.28);
+    text-color:                 #58a6ff;
+    border:                     1px;
+    border-color:               #58a6ff;
+}
+
+/* Lista de aplicaciones */
 listview {
     columns:                    1;
     lines:                      5;
-    spacing:                    3px;
+    spacing:                    4px;
     cycle:                      true;
     dynamic:                    true;
     scrollbar:                  false;
     border:                     0px;
-    padding:                    4px 0px 0px 0px;
+    padding:                    2px 0px;
 }
 
 element {
-    padding:                    7px 11px;
-    border-radius:              6px;
-    spacing:                    10px;
+    padding:                    6px 10px;
+    border-radius:              8px;
+    spacing:                    12px;
+    children:                   [ element-icon, element-text ];
 }
 
 element-icon {
-    size:                       22px;
+    size:                       32px;
     vertical-align:             0.5;
 }
 
 element-text {
-    text-color:                 #f0f6fc;
+    text-color:                 #e6edf3;
     vertical-align:             0.5;
+    markup:                     true;
 }
 
 element normal.normal {
     background-color:           transparent;
-    text-color:                 #f0f6fc;
+    text-color:                 #e6edf3;
 }
 
 element selected.normal {
-    background-color:           rgba(0, 255, 204, 0.18);
-    text-color:                 #00ffcc;
-    border-radius:              6px;
+    background-color:           rgba(56, 139, 253, 0.22);
+    text-color:                 #ffffff;
+    border-radius:              8px;
     border:                     1px;
-    border-color:               #00ffcc;
+    border-color:               rgba(88, 166, 255, 0.65);
 }
 
 element alternate.normal {
     background-color:           transparent;
-    text-color:                 #f0f6fc;
+    text-color:                 #e6edf3;
+}
+
+/* ==============================================================================
+   FOOTER: CONTADOR DE APPS Y ATAJOS DE TECLADO
+   ============================================================================== */
+footer {
+    orientation:                horizontal;
+    expand:                     false;
+    padding:                    4px 2px 0px 2px;
+    children:                   [ num-filtered-rows, textbox-apps-label, footer-dummy, textbox-keybinds ];
+}
+
+num-filtered-rows {
+    expand:                     false;
+    text-color:                 rgba(255, 255, 255, 0.40);
+    font:                       "JetBrainsMono Nerd Font 8.5";
+    vertical-align:             0.5;
+}
+
+textbox-apps-label {
+    expand:                     false;
+    str:                        " apps";
+    text-color:                 rgba(255, 255, 255, 0.40);
+    font:                       "JetBrainsMono Nerd Font 8.5";
+    vertical-align:             0.5;
+}
+
+footer-dummy {
+    expand:                     true;
+}
+
+textbox-keybinds {
+    expand:                     false;
+    str:                        "↑↓ navigate   ↵ launch   esc close";
+    text-color:                 rgba(255, 255, 255, 0.35);
+    font:                       "JetBrainsMono Nerd Font 8.5";
+    vertical-align:             0.5;
 }

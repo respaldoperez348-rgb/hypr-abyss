@@ -22,8 +22,9 @@ Item {
 
     property var theme
     property bool isOpen: false
+    property string barStyle: "deck"
     signal closeRequested()
-    property alias card: dialogCard
+    readonly property Item card: (root.barStyle === "deck") ? squircleDeck : dialogCard
 
     // Estado del elemento enfocado por teclado (0 a 4)
     property int selectedIndex: 3 // Por defecto en Apagar o Bloquear
@@ -201,6 +202,7 @@ Item {
         width: 760
         height: root.pendingConfirmIndex !== -1 ? 360 : 310
         radius: 20
+        visible: root.barStyle === "island"
 
         // Estética Frosted Glass
         color: root.theme ? root.theme.background : "#cc0d1117"
@@ -726,6 +728,242 @@ Item {
                         Text { anchors.centerIn: parent; text: "ESC"; font.pixelSize: 8; font.bold: true; color: "#8b949e" }
                     }
                     Text { text: "Cancelar"; font.pixelSize: 9; color: "#6e7681"; anchors.verticalCenter: parent.verticalCenter }
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // 3. Barra Horizontal Squircle Neón (Modo Dev - Imagen 5)
+    // ==========================================
+    Rectangle {
+        id: squircleDeck
+        anchors.centerIn: parent
+        width: 390
+        height: 84
+        radius: 22
+        visible: root.barStyle === "deck"
+
+        // Fondo Frosted Glass Dark
+        color: "#ea0d1117"
+        border.width: 1.2
+        border.color: root.pendingConfirmIndex !== -1 
+                      ? root.actions[root.pendingConfirmIndex].color 
+                      : Qt.rgba(0, 255, 204, 0.35)
+
+        scale: root.isOpen ? 1.0 : 0.88
+        opacity: root.isOpen ? 1.0 : 0.0
+
+        Behavior on scale {
+            NumberAnimation { duration: 240; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+        }
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
+        }
+        Behavior on border.color {
+            ColorAnimation { duration: 180 }
+        }
+
+        // Resplandor exterior suave
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -4
+            radius: parent.radius + 3
+            color: "transparent"
+            border.width: 1
+            border.color: root.pendingConfirmIndex !== -1 
+                          ? Qt.rgba(root.actions[root.pendingConfirmIndex].color.r, root.actions[root.pendingConfirmIndex].color.g, root.actions[root.pendingConfirmIndex].color.b, 0.4)
+                          : Qt.rgba(0, 255, 204, 0.25)
+            z: -1
+        }
+
+        // Fila de 5 Botones Squircle
+        Row {
+            anchors.centerIn: parent
+            spacing: 12
+
+            Repeater {
+                model: [0, 4, 2, 1, 3] // Lock [1], Suspend [5], Reboot [3], Logout [2], PowerOff [4]
+
+                delegate: Rectangle {
+                    id: sqBtn
+                    required property int modelData
+                    required property int index
+
+                    readonly property var act: root.actions[modelData]
+                    readonly property bool isSelected: root.selectedIndex === modelData
+                    readonly property bool isHovered: sqMouse.containsMouse
+                    readonly property bool isPending: root.pendingConfirmIndex === modelData
+
+                    width: 58
+                    height: 58
+                    radius: 16
+
+                    y: (isHovered || isSelected) ? -4 : 0
+                    scale: (isHovered || isSelected) ? 1.08 : 1.0
+                    Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutQuad } }
+                    Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutQuad } }
+
+                    color: isPending 
+                           ? Qt.rgba(act.color.r, act.color.g, act.color.b, 0.30)
+                           : ((isHovered || isSelected) ? Qt.rgba(act.color.r, act.color.g, act.color.b, 0.18) : Qt.rgba(1, 1, 1, 0.04))
+
+                    border.width: (isPending || isSelected || isHovered) ? 2 : 1
+                    border.color: (isPending || isSelected || isHovered) ? act.color : Qt.rgba(255, 255, 255, 0.12)
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                    // Resplandor de selección neón
+                    Rectangle {
+                        visible: sqBtn.isSelected || sqBtn.isHovered
+                        anchors.fill: parent
+                        anchors.margins: -3.5
+                        radius: parent.radius + 2
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Qt.rgba(sqBtn.act.color.r, sqBtn.act.color.g, sqBtn.act.color.b, 0.45)
+                    }
+
+                    // Icono Vectorial Outline
+                    Canvas {
+                        anchors.centerIn: parent
+                        width: 32
+                        height: 32
+                        property color iconCol: (sqBtn.isHovered || sqBtn.isSelected || sqBtn.isPending) ? sqBtn.act.color : Qt.rgba(255, 255, 255, 0.75)
+                        onIconColChanged: requestPaint()
+                        Component.onCompleted: requestPaint()
+
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.reset();
+                            ctx.strokeStyle = iconCol;
+                            ctx.fillStyle = iconCol;
+                            ctx.lineWidth = 1.8;
+                            ctx.lineCap = "round";
+                            ctx.lineJoin = "round";
+
+                            var type = sqBtn.act.iconType;
+                            if (type === "lock") {
+                                ctx.beginPath();
+                                ctx.arc(16, 11, 5.5, Math.PI, 0, false);
+                                ctx.stroke();
+                                ctx.strokeRect(8.5, 11, 15, 13);
+                                ctx.beginPath();
+                                ctx.arc(16, 16.5, 2, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.moveTo(16, 18.5); ctx.lineTo(16, 21);
+                                ctx.stroke();
+                            } else if (type === "suspend") {
+                                ctx.beginPath();
+                                ctx.arc(16, 16, 8.5, 0.7 * Math.PI, 1.8 * Math.PI, false);
+                                ctx.arc(14, 15, 7, 1.7 * Math.PI, 0.8 * Math.PI, true);
+                                ctx.closePath();
+                                ctx.stroke();
+                            } else if (type === "reboot") {
+                                ctx.beginPath();
+                                ctx.arc(16, 16, 8.5, -Math.PI * 0.75, Math.PI * 0.35, false);
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(22, 20); ctx.lineTo(25, 23.5); ctx.lineTo(19, 23.5);
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.arc(16, 16, 8.5, Math.PI * 0.25, -Math.PI * 0.65, false);
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(10, 12); ctx.lineTo(7, 8.5); ctx.lineTo(13, 8.5);
+                                ctx.stroke();
+                            } else if (type === "logout") {
+                                ctx.beginPath();
+                                ctx.moveTo(15, 8); ctx.lineTo(8, 8); ctx.lineTo(8, 24); ctx.lineTo(15, 24);
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(13, 16); ctx.lineTo(24, 16);
+                                ctx.lineTo(19, 11);
+                                ctx.moveTo(24, 16); ctx.lineTo(19, 21);
+                                ctx.stroke();
+                            } else if (type === "power") {
+                                ctx.beginPath();
+                                ctx.arc(16, 17, 8.5, -Math.PI * 0.65, -Math.PI * 0.35, true);
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(16, 7); ctx.lineTo(16, 16);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+
+                    // Key badge
+                    Text {
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.margins: 4
+                        text: sqBtn.act.key
+                        font.family: "JetBrains Mono Nerd Font, monospace"
+                        font.pixelSize: 8
+                        font.bold: true
+                        color: (sqBtn.isHovered || sqBtn.isSelected) ? sqBtn.act.color : Qt.rgba(255, 255, 255, 0.35)
+                    }
+
+                    MouseArea {
+                        id: sqMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.selectedIndex = sqBtn.modelData;
+                            root.executeAction(sqBtn.modelData);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Píldora de estado / acción flotante inferior
+        Item {
+            anchors.top: parent.bottom
+            anchors.topMargin: 12
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: statusCapsule.width
+            height: statusCapsule.height
+
+            Rectangle {
+                id: statusCapsule
+                width: statusRow.implicitWidth + 24
+                height: 26
+                radius: 13
+                color: "#f00d1117"
+                border.width: 1
+                border.color: root.pendingConfirmIndex !== -1 
+                              ? root.actions[root.pendingConfirmIndex].color 
+                              : Qt.rgba(0, 255, 204, 0.35)
+
+                Row {
+                    id: statusRow
+                    anchors.centerIn: parent
+                    spacing: 7
+
+                    Rectangle {
+                        width: 6
+                        height: 6
+                        radius: 3
+                        color: root.pendingConfirmIndex !== -1 
+                               ? root.actions[root.pendingConfirmIndex].color 
+                               : root.actions[root.selectedIndex].color
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: root.pendingConfirmIndex !== -1 
+                              ? root.actions[root.pendingConfirmIndex].confirmText
+                              : ("[" + root.actions[root.selectedIndex].key + "] " + root.actions[root.selectedIndex].title.toUpperCase() + "  •  Enter / Clic")
+                        font.family: "JetBrains Mono Nerd Font, monospace"
+                        font.pixelSize: 10
+                        font.bold: true
+                        color: "#f0f6fc"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
             }
         }

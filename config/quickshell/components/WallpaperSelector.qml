@@ -17,12 +17,13 @@ Item {
 
     property var theme
     property bool isOpen: false
+    property string barStyle: "deck"
     signal closeRequested()
     property alias card: panelCard
     readonly property bool isAnimating: slideYAnim.running
 
     implicitWidth: 880
-    implicitHeight: 240
+    implicitHeight: (root.barStyle === "deck") ? 310 : 240
 
     // Estados de filtrado y búsqueda
     property string activeFilter: "all" // "all", "static", "animated"
@@ -534,12 +535,274 @@ Item {
             }
 
             // ==========================================
-            // Carrusel Horizontal Dinámico de Miniaturas
+            // Carrusel CoverFlow 3D Neón (Modo Dev / Programación - Imagen 2)
+            // ==========================================
+            Item {
+                id: coverFlowContainer
+                Layout.fillWidth: true
+                Layout.preferredHeight: (root.barStyle === "deck") ? 190 : 0
+                visible: root.barStyle === "deck"
+                clip: true
+
+                PathView {
+                    id: coverFlowView
+                    anchors.fill: parent
+                    model: root.filteredWallpapers
+                    pathItemCount: Math.min(7, Math.max(1, root.filteredWallpapers.length))
+                    preferredHighlightBegin: 0.5
+                    preferredHighlightEnd: 0.5
+                    highlightRangeMode: PathView.StrictlyEnforceRange
+                    interactive: true
+                    clip: false
+
+                    // Desplazamiento por rueda de ratón en Coverflow
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.NoButton
+                        onWheel: function(wheel) {
+                            if (wheel.angleDelta.y < 0) {
+                                coverFlowView.incrementCurrentIndex();
+                            } else if (wheel.angleDelta.y > 0) {
+                                coverFlowView.decrementCurrentIndex();
+                            }
+                        }
+                    }
+
+                    path: Path {
+                        startX: 70
+                        startY: coverFlowContainer.height / 2 - 12
+
+                        PathAttribute { name: "itemZ"; value: 10 }
+                        PathAttribute { name: "itemScale"; value: 0.78 }
+                        PathAttribute { name: "itemAngle"; value: 34 }
+                        PathAttribute { name: "itemOpacity"; value: 0.55 }
+
+                        PathLine {
+                            x: coverFlowContainer.width / 2
+                            y: coverFlowContainer.height / 2 - 12
+                        }
+
+                        PathAttribute { name: "itemZ"; value: 100 }
+                        PathAttribute { name: "itemScale"; value: 1.25 }
+                        PathAttribute { name: "itemAngle"; value: 0 }
+                        PathAttribute { name: "itemOpacity"; value: 1.0 }
+
+                        PathLine {
+                            x: coverFlowContainer.width - 70
+                            y: coverFlowContainer.height / 2 - 12
+                        }
+
+                        PathAttribute { name: "itemZ"; value: 10 }
+                        PathAttribute { name: "itemScale"; value: 0.78 }
+                        PathAttribute { name: "itemAngle"; value: -34 }
+                        PathAttribute { name: "itemOpacity"; value: 0.55 }
+                    }
+
+                    delegate: Item {
+                        id: flowCard
+                        width: 200
+                        height: 115
+                        z: PathView.itemZ !== undefined ? PathView.itemZ : 0
+                        scale: PathView.itemScale !== undefined ? PathView.itemScale : 1.0
+                        opacity: PathView.itemOpacity !== undefined ? PathView.itemOpacity : 1.0
+
+                        readonly property bool isCurrent: PathView.isCurrentItem
+                        readonly property var itemData: modelData
+                        readonly property bool isSelected: root.selectedPath === itemData.path
+                        readonly property bool isJustApplied: root.justAppliedPath === itemData.path
+
+                        transform: Rotation {
+                            origin.x: flowCard.width / 2
+                            origin.y: flowCard.height / 2
+                            axis { x: 0; y: 1; z: 0 }
+                            angle: PathView.itemAngle !== undefined ? PathView.itemAngle : 0
+                        }
+
+                        // Anillo Exterior Resplandeciente Neón (Magenta / Naranja Neón como en la Ref 2)
+                        Rectangle {
+                            visible: flowCard.isCurrent
+                            anchors.fill: parent
+                            anchors.margins: -7
+                            radius: 17
+                            color: "transparent"
+                            border.width: 2
+                            border.color: flowCard.isSelected ? "#00ffcc" : "#ff5577"
+                            opacity: 0.85
+
+                            SequentialAnimation on opacity {
+                                running: flowCard.isCurrent
+                                loops: Animation.Infinite
+                                NumberAnimation { to: 0.50; duration: 900; easing.type: Easing.InOutSine }
+                                NumberAnimation { to: 0.95; duration: 900; easing.type: Easing.InOutSine }
+                            }
+                        }
+
+                        // Anillo Interior Neón Cian Concéntrico
+                        Rectangle {
+                            visible: flowCard.isCurrent
+                            anchors.fill: parent
+                            anchors.margins: -3.5
+                            radius: 14
+                            color: "transparent"
+                            border.width: 1.5
+                            border.color: flowCard.isSelected ? "#50fa7b" : "#00ffcc"
+                        }
+
+                        // Tarjeta Principal con la Miniatura
+                        Rectangle {
+                            id: flowPreviewBox
+                            anchors.fill: parent
+                            radius: 11
+                            clip: true
+                            color: "#161b22"
+                            border.width: flowCard.isCurrent ? 2 : 1
+                            border.color: flowCard.isCurrent ? "#00ffcc" : Qt.rgba(1, 1, 1, 0.15)
+
+                            Image {
+                                anchors.fill: parent
+                                source: itemData.thumb
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: true
+                                smooth: true
+                            }
+
+                            // Sombreado en tarjetas laterales
+                            Rectangle {
+                                anchors.fill: parent
+                                color: "#000000"
+                                opacity: flowCard.isCurrent ? 0.0 : 0.40
+                            }
+
+                            // Badge de Formato en esquina superior derecha
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.right: parent.right
+                                anchors.margins: 5
+                                height: 14
+                                width: flowBadgeRow.implicitWidth + 8
+                                radius: 4
+                                color: Qt.rgba(0, 0, 0, 0.75)
+                                border.width: 0.5
+                                border.color: Qt.rgba(255, 255, 255, 0.2)
+
+                                Row {
+                                    id: flowBadgeRow
+                                    anchors.centerIn: parent
+                                    spacing: 3
+
+                                    Text {
+                                        text: itemData.ext.toUpperCase()
+                                        font.family: "JetBrains Mono Nerd Font, monospace"
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: itemData.type === "animated" ? "#bd93f9" : "#ffffff"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                }
+                            }
+
+                            // Badge de Aplicado / Activo
+                            Rectangle {
+                                visible: flowCard.isSelected
+                                anchors.bottom: parent.bottom
+                                anchors.right: parent.right
+                                anchors.margins: 5
+                                height: 16
+                                width: flowActiveRow.implicitWidth + 8
+                                radius: 8
+                                color: flowCard.isJustApplied ? "#50fa7b" : "#00ffcc"
+
+                                Row {
+                                    id: flowActiveRow
+                                    anchors.centerIn: parent
+                                    spacing: 3
+
+                                    Text {
+                                        text: flowCard.isJustApplied ? "APPLIED" : "ACTIVE"
+                                        font.family: "JetBrains Mono Nerd Font, monospace"
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        color: "#0d1117"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                }
+                            }
+                        }
+
+                        // ==========================================
+                        // Píldora de Etiqueta Flotante Inferior (Imagen 2: "pastel-window")
+                        // ==========================================
+                        Item {
+                            visible: flowCard.isCurrent
+                            anchors.top: flowCard.bottom
+                            anchors.topMargin: 11
+                            anchors.horizontalCenter: flowCard.horizontalCenter
+                            width: labelCapsule.width
+                            height: labelCapsule.height
+                            z: 250
+
+                            Rectangle {
+                                id: labelCapsule
+                                width: labelRow.implicitWidth + 24
+                                height: 25
+                                radius: 12.5
+                                color: "#f00d1117"
+                                border.width: 1
+                                border.color: flowCard.isSelected ? "#00ffcc" : Qt.rgba(255, 85, 119, 0.5)
+
+                                Row {
+                                    id: labelRow
+                                    anchors.centerIn: parent
+                                    spacing: 6
+
+                                    // Indicador LED de foco
+                                    Rectangle {
+                                        width: 6
+                                        height: 6
+                                        radius: 3
+                                        color: flowCard.isSelected ? "#50fa7b" : (flowCard.itemData.type === "animated" ? "#bd93f9" : "#00ffcc")
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+
+                                    // Nombre del fondo sin extensión
+                                    Text {
+                                        text: flowCard.itemData.name.replace(/\.[^/.]+$/, "")
+                                        font.family: "JetBrains Mono Nerd Font, monospace"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        color: "#f0f6fc"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                }
+                            }
+                        }
+
+                        // Clic interactivo: centrar o aplicar
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (flowCard.isCurrent) {
+                                    root.applyWallpaper(flowCard.itemData.path);
+                                } else {
+                                    coverFlowView.currentIndex = index;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ==========================================
+            // Carrusel Horizontal Plano (Modo Diario / Zen - Lista)
             // ==========================================
             ListView {
                 id: wallpaperList
                 Layout.fillWidth: true
-                Layout.preferredHeight: 132
+                Layout.preferredHeight: (root.barStyle === "island") ? 132 : 0
+                visible: root.barStyle === "island"
                 orientation: ListView.Horizontal
                 spacing: 14
                 clip: true
@@ -854,24 +1117,38 @@ Item {
                             }
 
                             Keys.onRightPressed: {
-                                if (wallpaperList.count > 0) {
-                                    wallpaperList.currentIndex = (wallpaperList.currentIndex + 1) % wallpaperList.count;
-                                    wallpaperList.positionViewAtIndex(wallpaperList.currentIndex, ListView.Contain);
+                                if (root.barStyle === "deck") {
+                                    if (coverFlowView.count > 0) coverFlowView.incrementCurrentIndex();
+                                } else {
+                                    if (wallpaperList.count > 0) {
+                                        wallpaperList.currentIndex = (wallpaperList.currentIndex + 1) % wallpaperList.count;
+                                        wallpaperList.positionViewAtIndex(wallpaperList.currentIndex, ListView.Contain);
+                                    }
                                 }
                             }
 
                             Keys.onLeftPressed: {
-                                if (wallpaperList.count > 0) {
-                                    wallpaperList.currentIndex = (wallpaperList.currentIndex - 1 + wallpaperList.count) % wallpaperList.count;
-                                    wallpaperList.positionViewAtIndex(wallpaperList.currentIndex, ListView.Contain);
+                                if (root.barStyle === "deck") {
+                                    if (coverFlowView.count > 0) coverFlowView.decrementCurrentIndex();
+                                } else {
+                                    if (wallpaperList.count > 0) {
+                                        wallpaperList.currentIndex = (wallpaperList.currentIndex - 1 + wallpaperList.count) % wallpaperList.count;
+                                        wallpaperList.positionViewAtIndex(wallpaperList.currentIndex, ListView.Contain);
+                                    }
                                 }
                             }
 
                             Keys.onReturnPressed: {
-                                if (wallpaperList.count > 0 && wallpaperList.currentIndex >= 0 && wallpaperList.currentIndex < wallpaperList.count) {
-                                    root.applyWallpaper(root.filteredWallpapers[wallpaperList.currentIndex].path);
-                                } else if (root.filteredWallpapers.length > 0) {
-                                    root.applyWallpaper(root.filteredWallpapers[0].path);
+                                if (root.barStyle === "deck") {
+                                    if (coverFlowView.count > 0 && coverFlowView.currentIndex >= 0 && coverFlowView.currentIndex < coverFlowView.count) {
+                                        root.applyWallpaper(root.filteredWallpapers[coverFlowView.currentIndex].path);
+                                    }
+                                } else {
+                                    if (wallpaperList.count > 0 && wallpaperList.currentIndex >= 0 && wallpaperList.currentIndex < wallpaperList.count) {
+                                        root.applyWallpaper(root.filteredWallpapers[wallpaperList.currentIndex].path);
+                                    } else if (root.filteredWallpapers.length > 0) {
+                                        root.applyWallpaper(root.filteredWallpapers[0].path);
+                                    }
                                 }
                             }
 

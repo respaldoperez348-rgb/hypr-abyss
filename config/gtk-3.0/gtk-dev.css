@@ -1,0 +1,63 @@
+/* ==============================================================================
+ * Dev / Loaf / Spacedrive Dark Aesthetic for Thunar (GTK 3)
+ * ============================================================================== */
+
+window.thunar,
+.thunar-window {
+    background-color: #0d1117;
+    color: #f0f6fc;
+}
+
+/* Área de contenido y visualización de archivos con estética de tarjetas */
+window.thunar .view,
+window.thunar .standard-view,
+window.thunar treeview,
+window.thunar iconview,
+window.thunar scrolledwindow {
+    background-color: #0f141c;
+    color: #f0f6fc;
+}
+
+/* Barra lateral estilo Spacedrive */
+window.thunar .sidebar,
+window.thunar .sidebar treeview {
+    background-color: #090d13;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    color: #8b949e;
+}
+
+window.thunar .sidebar:selected,
+window.thunar .sidebar treeview:selected {
+    background-color: rgba(0, 255, 204, 0.18);
+    color: #00ffcc;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+/* Cabecera y barras de herramientas */
+window.thunar headerbar,
+window.thunar toolbar,
+window.thunar menubar {
+    background-color: #090d13;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #f0f6fc;
+}
+
+/* Barra de ruta tipo cápsula Spacedrive */
+window.thunar entry,
+window.thunar .path-bar {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #f0f6fc;
+}
+
+/* Tarjetas de archivos seleccionadas con acento neón */
+window.thunar .view:selected,
+window.thunar treeview:selected,
+window.thunar iconview:selected {
+    background-color: rgba(0, 255, 204, 0.22);
+    color: #00ffcc;
+    border: 1px solid rgba(0, 255, 204, 0.6);
+    border-radius: 10px;
+}
