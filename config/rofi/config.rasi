@@ -1,19 +1,16 @@
 /**
- * Rofi Minimalist Spotlight Launcher (Cyberpunk Frosted Glass)
- * Diseño compacto, elegante y centrado, adaptado a resolución escalada (1.5x)
+ * Rofi - Modo Programación (Cyberpunk Cockpit Launcher)
  */
 
 configuration {
     modi:                       "drun,run";
     show-icons:                 true;
-    display-drun:               "";
-    display-run:                "";
+    display-drun:               " DEV";
+    display-run:                " RUN";
     drun-display-format:        "{name}";
     font:                       "JetBrainsMono Nerd Font 10";
-    icon-theme:                 "Papirus-Dark";
+    icon-theme:                 "Tela-circle-dracula-dark";
 }
-
-@import "~/.cache/wal/colors-rofi-dark.rasi"
 
 * {
     font:                       "JetBrainsMono Nerd Font 10";
@@ -22,11 +19,11 @@ configuration {
 }
 
 window {
-    width:                      420px;
-    border:                     1.5px;
-    border-color:               @selected-normal-background;
-    border-radius:              14px;
-    background-color:           rgba(13, 17, 23, 0.80);
+    width:                      460px;
+    border:                     2px;
+    border-color:               #00ffcc;
+    border-radius:              10px;
+    background-color:           rgba(10, 14, 20, 0.92);
     padding:                    12px;
     anchor:                     center;
     location:                   center;
@@ -38,25 +35,26 @@ mainbox {
 }
 
 inputbar {
-    background-color:           rgba(22, 27, 34, 0.75);
-    border-radius:              10px;
+    background-color:           rgba(16, 22, 34, 0.85);
+    border-radius:              8px;
     border:                     1px;
-    border-color:               rgba(255, 255, 255, 0.08);
-    padding:                    6px 10px;
+    border-color:               rgba(0, 255, 204, 0.35);
+    padding:                    7px 11px;
     spacing:                    8px;
     children:                   [ prompt, entry ];
 }
 
 prompt {
-    text-color:                 @selected-normal-background;
+    text-color:                 #00ffcc;
     font-size:                  11px;
+    font-weight:                bold;
     vertical-align:             0.5;
 }
 
 entry {
     text-color:                 #f0f6fc;
-    placeholder:                "Buscar app...";
-    placeholder-color:          rgba(255, 255, 255, 0.35);
+    placeholder:                "Comando de desarrollo o app...";
+    placeholder-color:          rgba(0, 255, 204, 0.30);
     vertical-align:             0.5;
 }
 
@@ -72,33 +70,35 @@ listview {
 }
 
 element {
-    padding:                    6px 10px;
-    border-radius:              8px;
+    padding:                    7px 11px;
+    border-radius:              6px;
     spacing:                    10px;
 }
 
 element-icon {
-    size:                       20px;
+    size:                       22px;
     vertical-align:             0.5;
 }
 
 element-text {
-    text-color:                 inherit;
+    text-color:                 #f0f6fc;
     vertical-align:             0.5;
 }
 
 element normal.normal {
     background-color:           transparent;
-    text-color:                 #e6edf3;
+    text-color:                 #f0f6fc;
 }
 
 element selected.normal {
-    background-color:           @selected-normal-background;
-    text-color:                 #ffffff;
-    border-radius:              8px;
+    background-color:           rgba(0, 255, 204, 0.18);
+    text-color:                 #00ffcc;
+    border-radius:              6px;
+    border:                     1px;
+    border-color:               #00ffcc;
 }
 
 element alternate.normal {
     background-color:           transparent;
-    text-color:                 #e6edf3;
+    text-color:                 #f0f6fc;
 }

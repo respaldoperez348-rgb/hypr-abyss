@@ -3,12 +3,12 @@
 setup_manager.py - Orquestador Global de Metamorfosis de Setup
 Conmuta de forma atómica y en tiempo real todo el entorno:
 - Quickshell (Dynamic Island vs Hyper-Utility Deck)
-- Fastfetch (Pac-man retro vs Arch Cyberpunk)
-- Kitty Terminal (Opacidad y paleta en caliente vía IPC)
-- Thunar & GTK (Iconos y temas con gsettings)
-- Hyprland (Bordes, radio de curvatura y animaciones)
-- Fondos de pantalla independientes con Pywal
-- Sincronización de bloqueo (Hyprlock) y login
+- Wallpaper (Sereno lago pastel vs Ciudad Cyberpunk neón) con Pywal
+- Fastfetch (Pac-man retro vs Arch Cyberpunk con specs dev)
+- Kitty Terminal (Tema pastel/cyan vs Tokio Night Neón y opacidad)
+- Rofi Launcher (Spotlight minimalista claro vs Cockpit HUD oscuro neón)
+- Thunar & GTK 3/4 (Tema claro adw-gtk3 + Tela-circle-nord vs oscuro adw-gtk3-dark + Tela-circle-dracula)
+- Hyprland (Bordes curvados 16px suaves vs Bordes afilados 8px neón reactivos)
 """
 import sys
 import os
@@ -28,23 +28,35 @@ DEFAULT_CONFIG = {
             "name": "Diario (Zen Glass)",
             "bar_style": "island",
             "wallpaper": str(WALLPAPERS_DIR / "train_and_lake.png"),
-            "icon_theme": "Tela-circle-nord-dark",
-            "gtk_theme": "adw-gtk3-dark",
+            "icon_theme": "Tela-circle-nord-light",
+            "gtk_theme": "adw-gtk3",
+            "color_scheme": "prefer-light",
+            "gtk_prefer_dark": "0",
             "fastfetch_config": "config-daily.jsonc",
-            "kitty_opacity": "0.76",
-            "hypr_rounding": 14,
-            "hypr_border_size": 1
+            "rofi_config": "config-daily.rasi",
+            "kitty_theme": "theme-daily.conf",
+            "kitty_opacity": "0.78",
+            "hypr_rounding": 16,
+            "hypr_border_size": 1,
+            "hypr_border_color": "rgba(a8d8e8ee) rgba(b8e0d2ee) 45deg",
+            "hypr_opacity": "0.88"
         },
         "dev": {
-            "name": "Programación (Cyberpunk)",
+            "name": "Programación (Cyberpunk Cockpit)",
             "bar_style": "deck",
-            "wallpaper": str(WALLPAPERS_DIR / "hacker.png"),
+            "wallpaper": str(WALLPAPERS_DIR / "cyber_city_ai.jpg"),
             "icon_theme": "Tela-circle-dracula-dark",
             "gtk_theme": "adw-gtk3-dark",
+            "color_scheme": "prefer-dark",
+            "gtk_prefer_dark": "1",
             "fastfetch_config": "config-dev.jsonc",
-            "kitty_opacity": "0.88",
+            "rofi_config": "config-dev.rasi",
+            "kitty_theme": "theme-dev.conf",
+            "kitty_opacity": "0.92",
             "hypr_rounding": 8,
-            "hypr_border_size": 2
+            "hypr_border_size": 2,
+            "hypr_border_color": "rgba(00ffccee) rgba(bd93f9ee) 45deg",
+            "hypr_opacity": "0.95"
         }
     }
 }
@@ -71,6 +83,36 @@ def run_quiet(cmd):
     except Exception:
         pass
 
+def link_file(src: Path, dst: Path):
+    if src.exists():
+        try:
+            if dst.is_symlink() or dst.exists():
+                dst.unlink()
+            dst.symlink_to(src)
+        except Exception:
+            pass
+
+def update_gtk_settings_ini(theme_name, icon_name, prefer_dark):
+    ini_path = Path.home() / ".config" / "gtk-3.0" / "settings.ini"
+    if not ini_path.exists():
+        return
+    try:
+        lines = []
+        with open(ini_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("gtk-theme-name="):
+                    lines.append(f"gtk-theme-name={theme_name}\n")
+                elif line.startswith("gtk-icon-theme-name="):
+                    lines.append(f"gtk-icon-theme-name={icon_name}\n")
+                elif line.startswith("gtk-application-prefer-dark-theme="):
+                    lines.append(f"gtk-application-prefer-dark-theme={prefer_dark}\n")
+                else:
+                    lines.append(line)
+        with open(ini_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+    except Exception:
+        pass
+
 def apply_profile(profile_key):
     data = load_data()
     if profile_key not in data.get("profiles", {}):
@@ -82,47 +124,63 @@ def apply_profile(profile_key):
 
     home = Path.home()
 
-    # 1. Fastfetch Switch (Symlink a la configuración activa)
+    # 1. Fastfetch Switch (Symlink)
     ff_src = home / ".config" / "fastfetch" / prof.get("fastfetch_config", "config-daily.jsonc")
     ff_dst = home / ".config" / "fastfetch" / "config.jsonc"
-    if ff_src.exists():
-        try:
-            if ff_dst.is_symlink() or ff_dst.exists():
-                ff_dst.unlink()
-            ff_dst.symlink_to(ff_src)
-        except Exception:
-            pass
+    link_file(ff_src, ff_dst)
 
-    # 2. GTK & Thunar Icons y Tema
-    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", prof.get("icon_theme", "Tela-circle-dracula-dark")])
-    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", prof.get("gtk_theme", "adw-gtk3-dark")])
+    # 2. Rofi Switch (Symlink)
+    rofi_src = home / ".config" / "rofi" / prof.get("rofi_config", "config-daily.rasi")
+    rofi_dst = home / ".config" / "rofi" / "config.rasi"
+    link_file(rofi_src, rofi_dst)
 
-    # 3. Hyprland Rounding y Bordes en Caliente
-    run_quiet(["hyprctl", "keyword", "decoration:rounding", str(prof.get("hypr_rounding", 10))])
-    run_quiet(["hyprctl", "keyword", "general:border_size", str(prof.get("hypr_border_size", 2))])
-
-    # 4. Kitty Terminal Opacity Live Reload
+    # 3. Kitty Terminal Theme & Opacity
+    kitty_src = home / ".config" / "kitty" / prof.get("kitty_theme", "theme-daily.conf")
+    kitty_dst = home / ".config" / "kitty" / "theme.conf"
+    link_file(kitty_src, kitty_dst)
+    
     opacity = prof.get("kitty_opacity", "0.85")
+    run_quiet(["kitty", "@", "--to", "unix:@mykitty", "set-colors", "--all", str(kitty_dst)])
     run_quiet(["kitty", "@", "--to", "unix:@mykitty", "set-background-opacity", opacity])
 
-    # 5. Quickshell Bar Switch vía IPC
+    # 4. GTK & Thunar Icons y Tema (GSettings + XFConf + INI)
+    gtk_theme = prof.get("gtk_theme", "adw-gtk3-dark")
+    icon_theme = prof.get("icon_theme", "Tela-circle-dracula-dark")
+    color_scheme = prof.get("color_scheme", "prefer-dark")
+    prefer_dark = prof.get("gtk_prefer_dark", "1")
+
+    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme])
+    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", icon_theme])
+    run_quiet(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", color_scheme])
+    
+    run_quiet(["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "-s", gtk_theme])
+    run_quiet(["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme])
+    update_gtk_settings_ini(gtk_theme, icon_theme, prefer_dark)
+
+    # 5. Hyprland Rounding, Bordes y Opacidad en Caliente
+    run_quiet(["hyprctl", "keyword", "decoration:rounding", str(prof.get("hypr_rounding", 10))])
+    run_quiet(["hyprctl", "keyword", "decoration:active_opacity", str(prof.get("hypr_opacity", "0.90"))])
+    run_quiet(["hyprctl", "keyword", "general:border_size", str(prof.get("hypr_border_size", 2))])
+    run_quiet(["hyprctl", "keyword", "general:col.active_border", prof.get("hypr_border_color", "rgba(00ffccee) rgba(bd93f9ee) 45deg")])
+
+    # 6. Quickshell Bar Switch vía IPC
     bar_style = prof.get("bar_style", "deck")
     run_quiet(["quickshell", "ipc", "call", "bar", "set", bar_style])
 
-    # 6. Fondo de pantalla con Pywal + Hyprlock/SDDM
+    # 7. Fondo de pantalla con Pywal + SDDM/Hyprlock
     wp_path = prof.get("wallpaper")
     if wp_path and Path(wp_path).exists():
         wallchange_script = home / ".config" / "hypr" / "scripts" / "wallchange.sh"
         if wallchange_script.exists():
             run_quiet([str(wallchange_script), wp_path])
 
-    # 7. Notificación visual
+    # 8. Notificación visual Cyberpunk / Zen
     run_quiet([
         "notify-send",
         "-a", "Setup Master",
         "-i", "preferences-desktop-theme",
         f"Modo {prof.get('name')} Activado",
-        "Ecosistema visual transformado por completo"
+        "Entorno transformado por completo"
     ])
 
     return profile_key
