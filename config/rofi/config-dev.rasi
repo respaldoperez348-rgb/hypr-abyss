@@ -16,6 +16,8 @@ configuration {
     icon-theme:                 "Tela-circle-dracula-dark";
 }
 
+@import "~/.cache/wal/colors-rofi-dark.rasi"
+
 * {
     font:                       "JetBrainsMono Nerd Font 10";
     background-color:           transparent;
@@ -26,7 +28,7 @@ window {
     width:                      820px;
     height:                     510px;
     border:                     1.5px;
-    border-color:               rgba(88, 166, 255, 0.35);
+    border-color:               @selected-normal-background;
     border-radius:              16px;
     background-color:           rgba(14, 18, 26, 0.94);
     padding:                    14px;

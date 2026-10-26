@@ -1,11 +1,14 @@
 /* ==============================================================================
- * Dev / Loaf / Spacedrive Dark Aesthetic for Thunar (GTK 3)
+ * Dev / Cyberpunk Cockpit Aesthetic for Thunar (GTK 3)
+ * Dynamically themed with Pywal wallpaper colors
  * ============================================================================== */
+
+@import url("colors-wal.css");
 
 window.thunar,
 .thunar-window {
-    background-color: #0d1117;
-    color: #f0f6fc;
+    background-color: @wal_bg;
+    color: @wal_fg;
 }
 
 /* Área de contenido y visualización de archivos con estética de tarjetas */
@@ -14,23 +17,24 @@ window.thunar .standard-view,
 window.thunar treeview,
 window.thunar iconview,
 window.thunar scrolledwindow {
-    background-color: #0f141c;
-    color: #f0f6fc;
+    background-color: shade(@wal_bg, 1.04);
+    color: @wal_fg;
 }
 
 /* Barra lateral estilo Spacedrive */
 window.thunar .sidebar,
 window.thunar .sidebar treeview {
-    background-color: #090d13;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    color: #8b949e;
+    background-color: shade(@wal_bg, 0.88);
+    border-right: 1px solid alpha(@wal_accent, 0.25);
+    color: alpha(@wal_fg, 0.75);
 }
 
 window.thunar .sidebar:selected,
 window.thunar .sidebar treeview:selected {
-    background-color: rgba(0, 255, 204, 0.18);
-    color: #00ffcc;
-    border-radius: 8px;
+    background-color: alpha(@wal_accent, 0.22);
+    color: @wal_accent;
+    border-left: 2px solid @wal_accent;
+    border-radius: 4px;
     font-weight: bold;
 }
 
@@ -38,26 +42,26 @@ window.thunar .sidebar treeview:selected {
 window.thunar headerbar,
 window.thunar toolbar,
 window.thunar menubar {
-    background-color: #090d13;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f0f6fc;
+    background-color: shade(@wal_bg, 0.90);
+    border-bottom: 1px solid alpha(@wal_accent, 0.25);
+    color: @wal_fg;
 }
 
 /* Barra de ruta tipo cápsula Spacedrive */
 window.thunar entry,
 window.thunar .path-bar {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: alpha(@wal_fg, 0.05);
+    border: 1px solid alpha(@wal_accent, 0.40);
     border-radius: 10px;
-    color: #f0f6fc;
+    color: @wal_fg;
 }
 
 /* Tarjetas de archivos seleccionadas con acento neón */
 window.thunar .view:selected,
 window.thunar treeview:selected,
 window.thunar iconview:selected {
-    background-color: rgba(0, 255, 204, 0.22);
-    color: #00ffcc;
-    border: 1px solid rgba(0, 255, 204, 0.6);
-    border-radius: 10px;
+    background-color: alpha(@wal_accent, 0.25);
+    color: @wal_accent;
+    border: 1.5px solid @wal_accent;
+    border-radius: 6px;
 }

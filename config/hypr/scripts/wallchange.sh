@@ -67,6 +67,40 @@ wal -i "$wal_target" -n -q -s -t -e 2>/dev/null || true
 mkdir -p "$HOME/.config/hypr/.cache"
 ln -sf "$wal_target" "$HOME/.config/hypr/.cache/current_wallpaper.png"
 
+# Generar colores dinámicos GTK 3 (Thunar) a partir de la paleta del wallpaper
+if [[ -f "$HOME/.cache/wal/colors.json" ]]; then
+    python3 -c '
+import json, os
+try:
+    with open(os.path.expanduser("~/.cache/wal/colors.json")) as f:
+        data = json.load(f)
+    bg = data.get("special", {}).get("background", "#0d1117")
+    fg = data.get("special", {}).get("foreground", "#f0f6fc")
+    accent = data.get("colors", {}).get("color4", "#00ffcc")
+    accent2 = data.get("colors", {}).get("color6", "#bd93f9")
+    sidebar = data.get("colors", {}).get("color0", "#090d13")
+    card = data.get("colors", {}).get("color8", "#161b22")
+    
+    css = f"""/* Generated dynamically from active wallpaper pywal palette */
+@define-color wal_bg {bg};
+@define-color wal_fg {fg};
+@define-color wal_accent {accent};
+@define-color wal_accent2 {accent2};
+@define-color wal_sidebar_bg {sidebar};
+@define-color wal_card_bg {card};
+"""
+    out_path = os.path.expanduser("~/.config/gtk-3.0/colors-wal.css")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w") as out:
+        out.write(css)
+except Exception:
+    pass
+'
+    # Recargar GTK notificando a las ventanas activas
+    gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
+    xfconf-query -c xsettings -p /Net/ThemeName -s "adw-gtk3-dark" 2>/dev/null || true
+fi
+
 # Sincronizar banner vertical de Rofi con el wallpaper actual
 mkdir -p "$HOME/.config/rofi/assets"
 rm -f "$HOME/.config/rofi/assets/current_wallpaper.jpg"

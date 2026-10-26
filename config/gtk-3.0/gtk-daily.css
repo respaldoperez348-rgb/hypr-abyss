@@ -1,58 +1,66 @@
 /* ==============================================================================
- * Daily / Zen Light Frosted Aesthetic for Thunar (GTK 3)
+ * Daily / Zen Glass Theme for Thunar (GTK 3)
+ * Dynamically themed with Pywal wallpaper colors
  * ============================================================================== */
+
+@import url("colors-wal.css");
 
 window.thunar,
 .thunar-window {
-    background-color: #f6f8fa;
-    color: #24292f;
+    background-color: @wal_bg;
+    color: @wal_fg;
 }
 
+/* Área de contenido y archivos */
 window.thunar .view,
 window.thunar .standard-view,
 window.thunar treeview,
 window.thunar iconview,
 window.thunar scrolledwindow {
-    background-color: #ffffff;
-    color: #24292f;
+    background-color: shade(@wal_bg, 1.06);
+    color: @wal_fg;
 }
 
+/* Barra lateral estilo cristal limpio */
 window.thunar .sidebar,
 window.thunar .sidebar treeview {
-    background-color: #f0f2f5;
-    border-right: 1px solid rgba(0, 0, 0, 0.08);
-    color: #57606a;
+    background-color: shade(@wal_bg, 0.94);
+    border-right: 1px solid alpha(@wal_fg, 0.08);
+    color: alpha(@wal_fg, 0.80);
 }
 
 window.thunar .sidebar:selected,
 window.thunar .sidebar treeview:selected {
-    background-color: rgba(9, 105, 218, 0.12);
-    color: #0969da;
+    background-color: alpha(@wal_accent, 0.22);
+    color: @wal_accent;
     border-radius: 8px;
     font-weight: bold;
 }
 
+/* Barra superior, menú y barra de herramientas */
 window.thunar headerbar,
 window.thunar toolbar,
 window.thunar menubar {
-    background-color: #f6f8fa;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    color: #24292f;
+    background-color: shade(@wal_bg, 0.92);
+    border-bottom: 1px solid alpha(@wal_fg, 0.08);
+    color: @wal_fg;
 }
 
+/* Barra de ruta / buscador */
 window.thunar entry,
 window.thunar .path-bar {
-    background-color: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    background-color: alpha(@wal_fg, 0.06);
+    border: 1px solid alpha(@wal_accent, 0.35);
     border-radius: 8px;
-    color: #24292f;
+    color: @wal_fg;
 }
 
+/* Archivos seleccionados con resplandor suave del color del wallpaper */
 window.thunar .view:selected,
 window.thunar treeview:selected,
 window.thunar iconview:selected {
-    background-color: rgba(9, 105, 218, 0.18);
-    color: #0969da;
-    border: 1px solid rgba(9, 105, 218, 0.5);
+    background-color: alpha(@wal_accent, 0.24);
+    color: @wal_accent;
+    border: 1px solid @wal_accent;
     border-radius: 8px;
 }
