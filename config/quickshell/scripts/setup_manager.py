@@ -114,7 +114,7 @@ def update_gtk_settings_ini(theme_name, icon_name, prefer_dark):
     except Exception:
         pass
 
-def apply_profile(profile_key):
+def apply_profile(profile_key, from_quickshell=False):
     data = load_data()
     if profile_key not in data.get("profiles", {}):
         profile_key = "dev"
@@ -135,14 +135,20 @@ def apply_profile(profile_key):
     rofi_dst = home / ".config" / "rofi" / "config.rasi"
     link_file(rofi_src, rofi_dst)
 
-    # 3. Kitty Terminal Theme & Opacity
+    # 3. Kitty Terminal Theme & Opacity (Recarga en caliente sobre todos los sockets activos)
     kitty_src = home / ".config" / "kitty" / prof.get("kitty_theme", "theme-daily.conf")
     kitty_dst = home / ".config" / "kitty" / "theme.conf"
     link_file(kitty_src, kitty_dst)
     
     opacity = prof.get("kitty_opacity", "0.85")
-    run_quiet(["kitty", "@", "--to", "unix:@mykitty", "set-colors", "--all", str(kitty_dst)])
-    run_quiet(["kitty", "@", "--to", "unix:@mykitty", "set-background-opacity", opacity])
+    try:
+        import re
+        ss_out = subprocess.check_output(["ss", "-xl"], text=True, stderr=subprocess.DEVNULL)
+        for sock in re.findall(r"@mykitty-\d+", ss_out):
+            run_quiet(["kitty", "@", "--to", f"unix:{sock}", "set-colors", "--all", str(kitty_dst)])
+            run_quiet(["kitty", "@", "--to", f"unix:{sock}", "set-background-opacity", opacity])
+    except Exception:
+        pass
 
     # 4. Hyprlock Lockscreen Switch (Symlink)
     hl_src = home / ".config" / "hypr" / "lockscreens" / prof.get("hyprlock_config", "hyprlock-dev.conf")
@@ -168,24 +174,42 @@ def apply_profile(profile_key):
     run_quiet(["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", icon_theme])
     update_gtk_settings_ini(gtk_theme, icon_theme, prefer_dark)
 
-    # 7. Hyprland Rounding, Bordes y Opacidad en Caliente
-    run_quiet(["hyprctl", "keyword", "decoration:rounding", str(prof.get("hypr_rounding", 10))])
-    run_quiet(["hyprctl", "keyword", "decoration:active_opacity", str(prof.get("hypr_opacity", "0.90"))])
-    run_quiet(["hyprctl", "keyword", "general:border_size", str(prof.get("hypr_border_size", 2))])
-    run_quiet(["hyprctl", "keyword", "general:col.active_border", prof.get("hypr_border_color", "rgba(00ffccee) rgba(bd93f9ee) 45deg")])
+    # 7. Hyprland Rounding, Bordes y Opacidad en Caliente (Hyprland Lua eval)
+    try:
+        import re
+        rounding = prof.get("hypr_rounding", 10)
+        active_opacity = prof.get("hypr_opacity", "0.90")
+        border_size = prof.get("hypr_border_size", 2)
+        border_col = prof.get("hypr_border_color", "rgba(00ffccee) rgba(bd93f9ee) 45deg")
+        colors_match = re.findall(r"rgba\([^)]+\)", border_col)
+        if colors_match:
+            lua_colors = "{" + ", ".join([f'"{c}"' for c in colors_match]) + "}"
+        else:
+            lua_colors = '{"rgba(00ffccee)", "rgba(bd93f9ee)"}'
+        lua_code = f"hl.config({{ decoration = {{ rounding = {rounding}, active_opacity = {active_opacity} }}, general = {{ border_size = {border_size}, col = {{ active_border = {{ colors = {lua_colors}, angle = 45 }} }} }} }})"
+        run_quiet(["hyprctl", "eval", lua_code])
+    except Exception:
+        pass
 
-    # 6. Quickshell Bar Switch vía IPC
+    # 8. Quickshell Bar Config & Switch
     bar_style = prof.get("bar_style", "deck")
-    run_quiet(["quickshell", "ipc", "call", "bar", "set", bar_style])
+    bar_cfg = home / ".config" / "quickshell" / "bar_config.json"
+    try:
+        with open(bar_cfg, "w", encoding="utf-8") as bf:
+            json.dump({"style": bar_style}, bf, indent=2)
+    except Exception:
+        pass
+    if not from_quickshell:
+        run_quiet(["quickshell", "ipc", "call", "bar", "set", bar_style])
 
-    # 7. Fondo de pantalla con Pywal + SDDM/Hyprlock
+    # 9. Fondo de pantalla con Pywal + SDDM/Hyprlock
     wp_path = prof.get("wallpaper")
     if wp_path and Path(wp_path).exists():
         wallchange_script = home / ".config" / "hypr" / "scripts" / "wallchange.sh"
         if wallchange_script.exists():
             run_quiet([str(wallchange_script), wp_path])
 
-    # 8. Notificación visual Cyberpunk / Zen
+    # 10. Notificación visual Cyberpunk / Zen
     run_quiet([
         "notify-send",
         "-a", "Setup Master",
@@ -196,11 +220,11 @@ def apply_profile(profile_key):
 
     return profile_key
 
-def toggle_profile():
+def toggle_profile(from_quickshell=False):
     data = load_data()
     curr = data.get("active", "dev")
     nxt = "daily" if curr == "dev" else "dev"
-    return apply_profile(nxt)
+    return apply_profile(nxt, from_quickshell=from_quickshell)
 
 def set_wallpaper_for_active(wp_path):
     data = load_data()
@@ -210,17 +234,19 @@ def set_wallpaper_for_active(wp_path):
         save_data(data)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        cmd = sys.argv[1].lower()
-        if cmd == "switch" and len(sys.argv) > 2:
-            print(apply_profile(sys.argv[2]))
+    from_qs = "--from-quickshell" in sys.argv
+    clean_argv = [a for a in sys.argv if a != "--from-quickshell"]
+    if len(clean_argv) > 1:
+        cmd = clean_argv[1].lower()
+        if cmd == "switch" and len(clean_argv) > 2:
+            print(apply_profile(clean_argv[2], from_quickshell=from_qs))
         elif cmd == "toggle":
-            print(toggle_profile())
+            print(toggle_profile(from_quickshell=from_qs))
         elif cmd == "get":
             data = load_data()
             print(data.get("active", "dev"))
-        elif cmd == "set-wp" and len(sys.argv) > 2:
-            set_wallpaper_for_active(sys.argv[2])
+        elif cmd == "set-wp" and len(clean_argv) > 2:
+            set_wallpaper_for_active(clean_argv[2])
         else:
             print(load_data().get("active", "dev"))
     else:

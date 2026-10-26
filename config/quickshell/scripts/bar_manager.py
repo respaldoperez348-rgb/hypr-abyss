@@ -41,41 +41,51 @@ def sync_environment(style):
     gtk_css_mode = "gtk-dev.css" if is_dev else "gtk-daily.css"
     link_file(home / ".config" / "gtk-3.0" / gtk_css_mode, home / ".config" / "gtk-3.0" / "gtk.css")
 
-    # 4. Hyprland Borders & Rounding
-    if is_dev:
-        os.system("hyprctl keyword decoration:rounding 8 >/dev/null 2>&1")
-        os.system("hyprctl keyword general:border_size 2 >/dev/null 2>&1")
-    else:
-        os.system("hyprctl keyword decoration:rounding 16 >/dev/null 2>&1")
-        os.system("hyprctl keyword general:border_size 1 >/dev/null 2>&1")
+    # 4. Hyprland Borders & Rounding (vía Hyprland Lua eval)
+    rounding = 8 if is_dev else 16
+    border_sz = 2 if is_dev else 1
+    os.system(f"hyprctl eval 'hl.config({{ decoration = {{ rounding = {rounding} }}, general = {{ border_size = {border_sz} }} }})' >/dev/null 2>&1")
 
-def set_style(style):
+def set_style(style, from_quickshell=False):
     if style not in ["deck", "island", "notch"]:
         style = "deck"
+    
+    # Si se pide deck o island, sincronizar con el orquestador maestro setup_manager
+    setup_mgr = Path.home() / ".config" / "quickshell" / "scripts" / "setup_manager.py"
+    if style in ["deck", "island"] and setup_mgr.exists():
+        mode = "dev" if style == "deck" else "daily"
+        qs_flag = ["--from-quickshell"] if from_quickshell else []
+        os.system(f"python3 {setup_mgr} switch {mode} {' '.join(qs_flag)} >/dev/null 2>&1")
+    else:
+        sync_environment(style)
+
     data = {"style": style}
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-    os.system(f"quickshell ipc call bar set {style} >/dev/null 2>&1")
-    sync_environment(style)
+    
+    if not from_quickshell:
+        os.system(f"quickshell ipc call bar set {style} >/dev/null 2>&1")
     return style
 
-def toggle_style():
+def toggle_style(from_quickshell=False):
     current = get_style()
     styles = ["deck", "island", "notch"]
     idx = styles.index(current) if current in styles else 0
     new_style = styles[(idx + 1) % len(styles)]
-    return set_style(new_style)
+    return set_style(new_style, from_quickshell=from_quickshell)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        cmd = sys.argv[1].lower()
+    from_qs = "--from-quickshell" in sys.argv
+    clean_argv = [a for a in sys.argv if a != "--from-quickshell"]
+    if len(clean_argv) > 1:
+        cmd = clean_argv[1].lower()
         if cmd == "get":
             print(get_style())
-        elif cmd == "set" and len(sys.argv) > 2:
-            print(set_style(sys.argv[2]))
+        elif cmd == "set" and len(clean_argv) > 2:
+            print(set_style(clean_argv[2], from_quickshell=from_qs))
         elif cmd == "toggle":
-            print(toggle_style())
+            print(toggle_style(from_quickshell=from_qs))
         else:
             print(get_style())
     else:

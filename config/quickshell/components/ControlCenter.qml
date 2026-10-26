@@ -1572,7 +1572,7 @@ Item {
                         }
 
                         Text {
-                            text: "Estilo de Barra"
+                            text: "Tema y Modo de Setup"
                             font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                             font.pixelSize: 9
                             font.bold: true

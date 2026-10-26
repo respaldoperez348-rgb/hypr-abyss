@@ -39,8 +39,11 @@ hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("quickshell ipc call powermenu toggle
 -- Atajo para mostrar/ocultar Reloj de Escritorio (Super + B)
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("quickshell ipc call clock toggle"))
 
--- Atajo para alternar Estilo de Barra: Triple Deck <-> Dynamic Island (Super + Alt + B)
+-- Atajo para alternar Estilo de Barra y Setup: Triple Deck <-> Dynamic Island (Super + Alt + B)
 hl.bind(mainMod .. " + ALT + B", hl.dsp.exec_cmd("quickshell ipc call bar toggle"))
+
+-- Atajo para Alternancia Global de Setup / Tema completo (Super + Alt + S)
+hl.bind(mainMod .. " + ALT + S", hl.dsp.exec_cmd("quickshell ipc call setup toggle"))
 
 -- Atajo para Actualización Segura del Sistema (Super + U)
 hl.bind(mainMod .. " + U", hl.dsp.exec_cmd("kitty --class arch-updater --title 'Actualización del Sistema Arch Linux' -e " .. home .. "/.config/hypr/scripts/system_update.sh"))

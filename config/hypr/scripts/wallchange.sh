@@ -107,13 +107,19 @@ rm -f "$HOME/.config/rofi/assets/current_wallpaper.jpg"
 real_img="$(realpath -q "$wal_target" 2>/dev/null || echo "$wal_target")"
 magick "$real_img" -resize "600x900^" -gravity center -extent 600x900 "$HOME/.config/rofi/assets/current_wallpaper.jpg" 2>/dev/null || cp "$real_img" "$HOME/.config/rofi/assets/current_wallpaper.jpg" 2>/dev/null || true
 
-# 6. Recargar colores en caliente en Kitty con timeout estricto para evitar retrasos de inicio
+# 6. Recargar colores en caliente en Kitty a través de los sockets activos
 if pgrep -x kitty >/dev/null; then
-    timeout 0.2s kitty @ --to unix:@mykitty set-colors --all "$HOME/.cache/wal/colors-kitty.conf" 2>/dev/null || true
+    for sock in $(ss -xl 2>/dev/null | grep -o '@mykitty-[0-9]*'); do
+        timeout 0.3s kitty @ --to "unix:$sock" set-colors --all "$HOME/.cache/wal/colors-kitty.conf" 2>/dev/null || true
+    done
 fi
 
-# 7. Recargar Hyprland y Dunst para sincronizar colores
-hyprctl reload 2>/dev/null || true
+# 7. Sincronizar Hyprland y Dunst con la paleta de Pywal en tiempo real (Lua eval)
+if [[ -f "$HOME/.cache/wal/colors.json" ]]; then
+    c4=$(python3 -c "import json; data=json.load(open('$HOME/.cache/wal/colors.json')); print(data.get('colors',{}).get('color4','#00ffcc').lstrip('#'))" 2>/dev/null || echo "00ffcc")
+    c5=$(python3 -c "import json; data=json.load(open('$HOME/.cache/wal/colors.json')); print(data.get('colors',{}).get('color5','#bd93f9').lstrip('#'))" 2>/dev/null || echo "bd93f9")
+    hyprctl eval "hl.config({ general = { col = { active_border = { colors = { 'rgba(${c4}ee)', 'rgba(${c5}ee)' }, angle = 45 } } } })" 2>/dev/null || true
+fi
 "$HOME/.config/dunst/update_dunst_theme.sh" 2>/dev/null || true
 
 # 8. Notificación visual si notify-send está disponible

@@ -221,15 +221,22 @@ ShellRoot {
     }
 
     function setBarStyle(style: string): void {
+        if (root.barStyle === style) return;
         root.barStyle = style;
-        saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/bar_manager.py", "set", style];
-        saveBarProc.running = false;
-        saveBarProc.running = true;
+        if (style === "notch") {
+            saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/bar_manager.py", "set", "notch", "--from-quickshell"];
+            saveBarProc.running = false;
+            saveBarProc.running = true;
+        } else {
+            var mode = (style === "island") ? "daily" : "dev";
+            root.setSetupMode(mode);
+        }
     }
 
     function setSetupMode(mode: string): void {
-        root.barStyle = (mode === "daily") ? "island" : "deck";
-        saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/setup_manager.py", "switch", mode];
+        var targetStyle = (mode === "daily") ? "island" : "deck";
+        root.barStyle = targetStyle;
+        saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/setup_manager.py", "switch", mode, "--from-quickshell"];
         saveBarProc.running = false;
         saveBarProc.running = true;
     }
@@ -241,7 +248,9 @@ ShellRoot {
             root.toggleBarStyle();
         }
         function set(style: string): void {
-            root.setBarStyle(style);
+            if (root.barStyle !== style) {
+                root.setBarStyle(style);
+            }
         }
     }
 
@@ -249,7 +258,8 @@ ShellRoot {
         target: "setup"
 
         function toggle(): void {
-            root.toggleBarStyle();
+            var nextMode = (root.barStyle === "deck") ? "daily" : "dev";
+            root.setSetupMode(nextMode);
         }
         function set(mode: string): void {
             root.setSetupMode(mode);
