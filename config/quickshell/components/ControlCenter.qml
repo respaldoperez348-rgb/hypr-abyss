@@ -1657,7 +1657,7 @@ Item {
 
                                 Row {
                                     anchors.centerIn: parent
-                                    spacing: 4
+                                    spacing: 3
                                     Text {
                                         text: "󱐋"
                                         font.family: "JetBrainsMono Nerd Font"
@@ -1665,7 +1665,7 @@ Item {
                                         color: root.barStyle === "island" ? (root.theme ? root.theme.accentAlt : "#bd93f9") : "#888888"
                                     }
                                     Text {
-                                        text: "Dynamic Island"
+                                        text: "Island"
                                         font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                         font.pixelSize: 8
                                         font.bold: root.barStyle === "island"
@@ -1679,6 +1679,46 @@ Item {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: root.setBarStyleRequested("island")
+                                }
+                            }
+
+                            // Opción 3: Pocket Notch
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: root.barStyle === "notch"
+                                       ? (root.theme ? Qt.rgba(root.theme.accent.r, root.theme.accent.g, root.theme.accent.b, 0.25) : Qt.rgba(0, 1, 0.8, 0.25))
+                                       : (optNotchMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent")
+                                border.width: root.barStyle === "notch" ? 1 : 0
+                                border.color: root.theme ? root.theme.accent : "#00ffcc"
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 3
+                                    Text {
+                                        text: "󰍹"
+                                        font.family: "JetBrainsMono Nerd Font"
+                                        font.pixelSize: 9
+                                        color: root.barStyle === "notch" ? (root.theme ? root.theme.accent : "#00ffcc") : "#888888"
+                                    }
+                                    Text {
+                                        text: "Pocket"
+                                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                        font.pixelSize: 8
+                                        font.bold: root.barStyle === "notch"
+                                        color: root.barStyle === "notch" ? "#ffffff" : "#888888"
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: optNotchMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.setBarStyleRequested("notch")
                                 }
                             }
                         }

@@ -17,17 +17,20 @@ def get_style():
     return "deck"
 
 def set_style(style):
-    if style not in ["deck", "island"]:
+    if style not in ["deck", "island", "notch"]:
         style = "deck"
     data = {"style": style}
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    os.system(f"quickshell ipc call bar set {style} >/dev/null 2>&1")
     return style
 
 def toggle_style():
     current = get_style()
-    new_style = "island" if current == "deck" else "deck"
+    styles = ["deck", "island", "notch"]
+    idx = styles.index(current) if current in styles else 0
+    new_style = styles[(idx + 1) % len(styles)]
     return set_style(new_style)
 
 if __name__ == "__main__":

@@ -81,6 +81,32 @@ ShellRoot {
         }
     }
 
+    // Control Notch (Barra 3: Pocket Island)
+    property bool notchExpanded: false
+    property string notchActiveTab: "media"
+
+    IpcHandler {
+        target: "notch"
+
+        function toggle(): void {
+            root.notchExpanded = !root.notchExpanded;
+            console.log("[NOTCH IPC] toggle -> notchExpanded is now: " + root.notchExpanded);
+        }
+        function expand(): void {
+            root.notchExpanded = true;
+            console.log("[NOTCH IPC] expand -> notchExpanded is now: " + root.notchExpanded);
+        }
+        function collapse(): void {
+            root.notchExpanded = false;
+            console.log("[NOTCH IPC] collapse -> notchExpanded is now: " + root.notchExpanded);
+        }
+        function setTab(tab: string): void {
+            root.notchActiveTab = tab;
+            root.notchExpanded = true;
+            console.log("[NOTCH IPC] setTab -> activeTab: " + tab + ", notchExpanded: true");
+        }
+    }
+
     // Control de apertura del Selector de Proyectos (Super + O)
     property bool projectHubOpen: false
     signal openProjectHubConfigs()
@@ -187,8 +213,11 @@ ShellRoot {
     property string barStyle: "deck"
 
     function toggleBarStyle(): void {
-        var nextMode = (root.barStyle === "deck") ? "daily" : "dev";
-        root.setSetupMode(nextMode);
+        var styles = ["deck", "island", "notch"];
+        var idx = styles.indexOf(root.barStyle);
+        if (idx === -1) idx = 0;
+        var nextStyle = styles[(idx + 1) % styles.length];
+        root.setBarStyle(nextStyle);
     }
 
     function setBarStyle(style: string): void {
@@ -235,7 +264,7 @@ ShellRoot {
             onStreamFinished: {
                 try {
                     var data = JSON.parse(this.text);
-                    if (data.style === "deck" || data.style === "island") {
+                    if (data.style === "deck" || data.style === "island" || data.style === "notch") {
                         root.barStyle = data.style;
                     }
                 } catch (e) {}
@@ -291,7 +320,7 @@ ShellRoot {
             // Se oculta automáticamente y libera el espacio exclusivo en pantalla completa
             // implicitHeight de 76px permite mostrar la sub-cápsula OSD con fondo 100% transparente alrededor
             visible: !isFullscreen
-            implicitHeight: isFullscreen ? 0 : 76
+            implicitHeight: isFullscreen ? 0 : 250
             exclusiveZone: isFullscreen ? 0 : 34
 
             // Capa superior en Wayland
@@ -301,7 +330,7 @@ ShellRoot {
             // Fondo 100% transparente para lograr el efecto flotante
             color: "transparent"
 
-            // MÁSCARA DE CLIC DINÁMICA (Deck Modular o Dynamic Island)
+            // MÁSCARA DE CLIC DINÁMICA (Deck Modular, Dynamic Island o Notch)
             mask: Region {
                 // Modo Deck
                 Region { item: (topPanel.isFullscreen || root.barStyle !== "deck") ? null : deck.leftPodCard }
@@ -312,6 +341,9 @@ ShellRoot {
                 // Modo Island
                 Region { item: (topPanel.isFullscreen || root.barStyle !== "island") ? null : island.mainCapsule }
                 Region { item: (topPanel.isFullscreen || root.barStyle !== "island" || !island.subIslandOpen) ? null : island.subCapsuleItem }
+
+                // Modo Notch (Pocket)
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "notch") ? null : notch.notchCard }
             }
 
             // Efecto de desenfoque de fondo Wayland nativo
@@ -325,6 +357,9 @@ ShellRoot {
                 // Modo Island
                 Region { item: (topPanel.isFullscreen || root.barStyle !== "island") ? null : island.mainCapsule }
                 Region { item: (topPanel.isFullscreen || root.barStyle !== "island" || !island.subIslandOpen) ? null : island.subCapsuleItem }
+
+                // Modo Notch (Pocket)
+                Region { item: (topPanel.isFullscreen || root.barStyle !== "notch") ? null : notch.notchCard }
             }
 
             Connections {
@@ -332,8 +367,10 @@ ShellRoot {
                 function onOsdRequested(mode, val, muted) {
                     if (root.barStyle === "deck") {
                         deck.showOsd(mode, val, muted);
-                    } else {
+                    } else if (root.barStyle === "island") {
                         island.showOsd(mode, val, muted);
+                    } else if (root.barStyle === "notch") {
+                        notch.showOsd(mode, val, muted);
                     }
                 }
             }
@@ -366,6 +403,31 @@ ShellRoot {
 
                 onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
                 onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
+            }
+
+            // Barra Estilo 3: Dynamic Island Notch estilo Pocket
+            NotchIsland {
+                id: notch
+                theme: globalTheme
+                visible: root.barStyle === "notch"
+
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                expanded: root.notchExpanded
+                activeTab: root.notchActiveTab
+                onToggleExpandRequested: root.notchExpanded = !root.notchExpanded
+                onCollapseRequested: root.notchExpanded = false
+                onExpandRequested: root.notchExpanded = true
+                onSetTabRequested: (tab) => root.notchActiveTab = tab
+                onActiveTabChanged: {
+                    if (root.notchActiveTab !== activeTab) root.notchActiveTab = activeTab;
+                }
+
+                onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
+                onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
+                onOpenWallpaperSelectorRequested: root.wallpaperOpen = true
+                onOpenPowerMenuRequested: root.powerMenuOpen = true
             }
         }
     }
@@ -447,7 +509,7 @@ ShellRoot {
                 barStyle: root.barStyle
                 anchors.fill: parent
                 onCloseRequested: root.controlCenterOpen = false
-                onSetBarStyleRequested: (style) => root.setSetupMode(style === "island" ? "daily" : "dev")
+                onSetBarStyleRequested: (style) => root.setBarStyle(style)
 
                 Connections {
                     target: root
