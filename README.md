@@ -14,6 +14,10 @@ Designed for minimal CPU usage (idles at 1-3% CPU), dynamic Pywal theme synchron
 
 </div>
 
+
+
+
+
 ---
 
 ## 🇺🇸 English
@@ -146,6 +150,13 @@ cd ~/hypr-abyss
 ```
 
 ---
+<img width="1920" height="1080" alt="swappy-20261027_092916" src="https://github.com/user-attachments/assets/6f0f8c55-9f4d-4727-a394-106355bae626" />
+
+<img width="1920" height="1080" alt="screenshot_2026-10-27_09-28-16" src="https://github.com/user-attachments/assets/ab1d4506-fe52-43fb-856d-f18b743e9bea" />
+
+
+
+
 
 <div align="center">
   <sub>Desarrollado con ❤️ para la comunidad de Hyprland & Linux.</sub>
@@ -154,5 +165,5 @@ cd ~/hypr-abyss
 
 
 
-<img width="1920" height="1080" alt="swappy-20261016_032020" src="https://github.com/user-attachments/assets/e98be312-5e94-43b1-b5d6-4312eb96dc1e" />
+
 
