@@ -108,8 +108,9 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- ==============================================================================
--- B.O.D.Y. — Esfera Holográfica (Super + Espacio o Alt + Espacio)
+-- B.O.D.Y. — Asistente de Voz con Antigravity & Handy (Alt + Z / Alt + Espacio)
 -- ==============================================================================
+hl.bind("ALT + Z", hl.dsp.exec_cmd(home .. "/.local/bin/body --toggle"))
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(home .. "/.local/bin/body --toggle"))
 hl.bind("ALT + SPACE", hl.dsp.exec_cmd(home .. "/.local/bin/body --toggle"))
 

@@ -31,13 +31,56 @@ ShellRoot {
     // Control de apertura del Menú de Energía y Apagado (Super + P)
     property bool powerMenuOpen: false
 
+    // Control Notch (Barra 3: Pocket Island)
+    property bool notchExpanded: false
+    property string notchActiveTab: "media"
+
+    // Gestor de Exclusividad Mutua: Solo un popup / panel puede estar abierto a la vez
+    function closeAllPopupsExcept(keep: string): void {
+        if (keep !== "wallpaper") root.wallpaperOpen = false;
+        if (keep !== "controlcenter") root.controlCenterOpen = false;
+        if (keep !== "powermenu") root.powerMenuOpen = false;
+        if (keep !== "notch") root.notchExpanded = false;
+        if (keep !== "projects") root.projectHubOpen = false;
+        if (keep !== "clipboard") root.clipboardOpen = false;
+        if (keep !== "musicplayer") root.musicPlayerOpen = false;
+        if (keep !== "scratchpad") root.scratchpadOpen = false;
+    }
+
+    onWallpaperOpenChanged: {
+        if (root.wallpaperOpen) root.closeAllPopupsExcept("wallpaper");
+    }
+
+    onControlCenterOpenChanged: {
+        if (root.controlCenterOpen) {
+            root.closeAllPopupsExcept("controlcenter");
+        } else {
+            root.edgeCooldown = true;
+            edgeCooldownTimer.restart();
+        }
+    }
+
+    onPowerMenuOpenChanged: {
+        if (root.powerMenuOpen) root.closeAllPopupsExcept("powermenu");
+    }
+
+    onNotchExpandedChanged: {
+        if (root.notchExpanded) root.closeAllPopupsExcept("notch");
+    }
+
     IpcHandler {
         target: "wallpaper"
 
         function toggle(): void {
-            root.wallpaperOpen = !root.wallpaperOpen;
+            if (root.wallpaperOpen) {
+                root.wallpaperOpen = false;
+            } else {
+                root.closeAllPopupsExcept("wallpaper");
+                root.wallpaperOpen = true;
+            }
         }
         function open(): void {
+            root.closeAllPopupsExcept("wallpaper");
             root.wallpaperOpen = true;
         }
         function close(): void {
@@ -49,19 +92,27 @@ ShellRoot {
         target: "controlcenter"
 
         function toggle(): void {
-            root.controlCenterOpen = !root.controlCenterOpen;
+            if (root.controlCenterOpen) {
+                root.controlCenterOpen = false;
+            } else {
+                root.closeAllPopupsExcept("controlcenter");
+                root.controlCenterOpen = true;
+            }
         }
         function open(): void {
+            root.closeAllPopupsExcept("controlcenter");
             root.controlCenterOpen = true;
         }
         function close(): void {
             root.controlCenterOpen = false;
         }
         function calendar(): void {
+            root.closeAllPopupsExcept("controlcenter");
             root.controlCenterOpen = true;
             root.openControlCenterSection("calendar");
         }
         function section(sec: string): void {
+            root.closeAllPopupsExcept("controlcenter");
             root.controlCenterOpen = true;
             root.openControlCenterSection(sec);
         }
@@ -71,9 +122,15 @@ ShellRoot {
         target: "powermenu"
 
         function toggle(): void {
-            root.powerMenuOpen = !root.powerMenuOpen;
+            if (root.powerMenuOpen) {
+                root.powerMenuOpen = false;
+            } else {
+                root.closeAllPopupsExcept("powermenu");
+                root.powerMenuOpen = true;
+            }
         }
         function open(): void {
+            root.closeAllPopupsExcept("powermenu");
             root.powerMenuOpen = true;
         }
         function close(): void {
@@ -81,29 +138,29 @@ ShellRoot {
         }
     }
 
-    // Control Notch (Barra 3: Pocket Island)
-    property bool notchExpanded: false
-    property string notchActiveTab: "media"
-
     IpcHandler {
         target: "notch"
 
         function toggle(): void {
-            root.notchExpanded = !root.notchExpanded;
-            console.log("[NOTCH IPC] toggle -> notchExpanded is now: " + root.notchExpanded);
+            if (root.powerMenuOpen || root.wallpaperOpen || root.controlCenterOpen || root.projectHubOpen || root.clipboardOpen) {
+                root.closeAllPopupsExcept("notch");
+                root.notchExpanded = true;
+            } else {
+                root.notchExpanded = !root.notchExpanded;
+                if (root.notchExpanded) root.closeAllPopupsExcept("notch");
+            }
         }
         function expand(): void {
+            root.closeAllPopupsExcept("notch");
             root.notchExpanded = true;
-            console.log("[NOTCH IPC] expand -> notchExpanded is now: " + root.notchExpanded);
         }
         function collapse(): void {
             root.notchExpanded = false;
-            console.log("[NOTCH IPC] collapse -> notchExpanded is now: " + root.notchExpanded);
         }
         function setTab(tab: string): void {
+            root.closeAllPopupsExcept("notch");
             root.notchActiveTab = tab;
             root.notchExpanded = true;
-            console.log("[NOTCH IPC] setTab -> activeTab: " + tab + ", notchExpanded: true");
         }
     }
 
@@ -223,18 +280,22 @@ ShellRoot {
     function setBarStyle(style: string): void {
         if (root.barStyle === style) return;
         root.barStyle = style;
-        if (style === "notch") {
-            saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/bar_manager.py", "set", "notch", "--from-quickshell"];
-            saveBarProc.running = false;
-            saveBarProc.running = true;
-        } else {
-            var mode = (style === "island") ? "daily" : "dev";
-            root.setSetupMode(mode);
-        }
+        var modeMap = {
+            "deck": "dev",
+            "island": "daily",
+            "notch": "pocket"
+        };
+        var mode = modeMap[style] || "dev";
+        root.setSetupMode(mode);
     }
 
     function setSetupMode(mode: string): void {
-        var targetStyle = (mode === "daily") ? "island" : "deck";
+        var styleMap = {
+            "dev": "deck",
+            "daily": "island",
+            "pocket": "notch"
+        };
+        var targetStyle = styleMap[mode] || "deck";
         root.barStyle = targetStyle;
         saveBarProc.command = [Quickshell.env("HOME") + "/.config/quickshell/scripts/setup_manager.py", "switch", mode, "--from-quickshell"];
         saveBarProc.running = false;
@@ -258,7 +319,11 @@ ShellRoot {
         target: "setup"
 
         function toggle(): void {
-            var nextMode = (root.barStyle === "deck") ? "daily" : "dev";
+            var modes = ["dev", "daily", "pocket"];
+            var styleToMode = { "deck": "dev", "island": "daily", "notch": "pocket" };
+            var curr = styleToMode[root.barStyle] || "dev";
+            var idx = modes.indexOf(curr);
+            var nextMode = modes[(idx + 1) % modes.length];
             root.setSetupMode(nextMode);
         }
         function set(mode: string): void {
@@ -286,6 +351,21 @@ ShellRoot {
         id: saveBarProc
         command: []
         running: false
+    }
+
+    Process {
+        id: rofiLauncherProc
+        command: ["bash", "-c", "pkill rofi || rofi -show drun -show-icons"]
+        running: false
+    }
+
+    IpcHandler {
+        target: "appmenu"
+
+        function toggle(): void {
+            rofiLauncherProc.running = false;
+            rofiLauncherProc.running = true;
+        }
     }
 
     // Señal e IPC para disparar el OSD de Volumen/Brillo en la Dynamic Island al instante
@@ -331,7 +411,7 @@ ShellRoot {
             // implicitHeight de 76px permite mostrar la sub-cápsula OSD con fondo 100% transparente alrededor
             visible: !isFullscreen
             implicitHeight: isFullscreen ? 0 : 250
-            exclusiveZone: isFullscreen ? 0 : 34
+            exclusiveZone: isFullscreen ? 0 : (root.barStyle === "notch" ? 44 : 34)
 
             // Capa superior en Wayland
             WlrLayershell.layer: WlrLayer.Top
@@ -426,18 +506,57 @@ ShellRoot {
 
                 expanded: root.notchExpanded
                 activeTab: root.notchActiveTab
-                onToggleExpandRequested: root.notchExpanded = !root.notchExpanded
+                onToggleExpandRequested: {
+                    if (root.powerMenuOpen || root.wallpaperOpen || root.controlCenterOpen || root.projectHubOpen) {
+                        root.closeAllPopupsExcept("notch");
+                        root.notchExpanded = true;
+                    } else {
+                        root.notchExpanded = !root.notchExpanded;
+                        if (root.notchExpanded) root.closeAllPopupsExcept("notch");
+                    }
+                }
                 onCollapseRequested: root.notchExpanded = false
-                onExpandRequested: root.notchExpanded = true
-                onSetTabRequested: (tab) => root.notchActiveTab = tab
+                onExpandRequested: {
+                    root.closeAllPopupsExcept("notch");
+                    root.notchExpanded = true;
+                }
+                onSetTabRequested: (tab) => {
+                    root.notchActiveTab = tab;
+                    root.notchExpanded = true;
+                }
                 onActiveTabChanged: {
                     if (root.notchActiveTab !== activeTab) root.notchActiveTab = activeTab;
                 }
 
-                onToggleControlCenterRequested: root.controlCenterOpen = !root.controlCenterOpen
-                onToggleMusicPlayerRequested: root.musicPlayerOpen = !root.musicPlayerOpen
-                onOpenWallpaperSelectorRequested: root.wallpaperOpen = true
-                onOpenPowerMenuRequested: root.powerMenuOpen = true
+                onToggleControlCenterRequested: {
+                    if (root.controlCenterOpen) {
+                        root.controlCenterOpen = false;
+                    } else {
+                        root.closeAllPopupsExcept("controlcenter");
+                        root.controlCenterOpen = true;
+                    }
+                }
+                onToggleMusicPlayerRequested: {
+                    if (root.musicPlayerOpen) {
+                        root.musicPlayerOpen = false;
+                    } else {
+                        root.closeAllPopupsExcept("musicplayer");
+                        root.musicPlayerOpen = true;
+                    }
+                }
+                onOpenWallpaperSelectorRequested: {
+                    root.closeAllPopupsExcept("wallpaper");
+                    root.wallpaperOpen = true;
+                }
+                onOpenPowerMenuRequested: {
+                    root.closeAllPopupsExcept("powermenu");
+                    root.powerMenuOpen = true;
+                }
+                onOpenAppMenuRequested: {
+                    root.closeAllPopupsExcept("");
+                    rofiLauncherProc.running = false;
+                    rofiLauncherProc.running = true;
+                }
             }
         }
     }
@@ -541,13 +660,6 @@ ShellRoot {
         onTriggered: root.edgeCooldown = false
     }
 
-    onControlCenterOpenChanged: {
-        if (!controlCenterOpen) {
-            root.edgeCooldown = true;
-            edgeCooldownTimer.restart();
-        }
-    }
-
     // ==========================================
     // 4. Activador por Borde Derecho (Auto-reveal al pasar el ratón)
     // ==========================================
@@ -611,10 +723,6 @@ ShellRoot {
             WlrLayershell.keyboardFocus: root.powerMenuOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
             color: "transparent"
-
-            mask: Region {
-                item: powerMenuContainer.card
-            }
 
             BackgroundEffect.blurRegion: Region {
                 item: powerMenuContainer.card

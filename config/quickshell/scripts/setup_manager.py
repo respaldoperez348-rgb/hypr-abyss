@@ -58,6 +58,25 @@ DEFAULT_CONFIG = {
             "hypr_border_size": 2,
             "hypr_border_color": "rgba(00ffccee) rgba(bd93f9ee) 45deg",
             "hypr_opacity": "0.95"
+        },
+        "pocket": {
+            "name": "Isla Pocket (Dynamic Notch)",
+            "bar_style": "notch",
+            "wallpaper": str(WALLPAPERS_DIR / "windows-11-monochrome-crimson-v0-ji17gc6yntxh1.webp"),
+            "icon_theme": "Tela-circle-nord-dark",
+            "gtk_theme": "adw-gtk3-dark",
+            "gtk_css": "gtk-pocket.css",
+            "color_scheme": "prefer-dark",
+            "gtk_prefer_dark": "1",
+            "fastfetch_config": "config-pocket.jsonc",
+            "rofi_config": "config-pocket.rasi",
+            "kitty_theme": "theme-pocket.conf",
+            "kitty_opacity": "0.85",
+            "hyprlock_config": "hyprlock-pocket.conf",
+            "hypr_rounding": 20,
+            "hypr_border_size": 2,
+            "hypr_border_color": "rgba(e056fdee) rgba(00f2feee) 45deg",
+            "hypr_opacity": "0.90"
         }
     }
 }
@@ -223,7 +242,9 @@ def apply_profile(profile_key, from_quickshell=False):
 def toggle_profile(from_quickshell=False):
     data = load_data()
     curr = data.get("active", "dev")
-    nxt = "daily" if curr == "dev" else "dev"
+    order = ["dev", "daily", "pocket"]
+    idx = order.index(curr) if curr in order else 0
+    nxt = order[(idx + 1) % len(order)]
     return apply_profile(nxt, from_quickshell=from_quickshell)
 
 def set_wallpaper_for_active(wp_path):

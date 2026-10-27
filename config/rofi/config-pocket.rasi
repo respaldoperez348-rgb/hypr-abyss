@@ -1,0 +1,203 @@
+/**
+ * Rofi - Modo Isla Pocket (Dynamic Island App Drawer Grid)
+ * Diseño de cuadrícula moderno con iconos grandes, cabecera de píldora estilo Notch
+ * Sincronizado dinámicamente con Pywal y el tema activo
+ */
+
+configuration {
+    modi:                       "drun,run";
+    show-icons:                 true;
+    display-drun:               "";
+    display-run:                "";
+    drun-display-format:        "{name}";
+    font:                       "JetBrainsMono Nerd Font 10";
+    icon-theme:                 "Tela-circle-nord-dark";
+}
+
+@import "~/.cache/wal/colors-rofi-dark.rasi"
+
+* {
+    font:                       "JetBrainsMono Nerd Font 10";
+    background-color:           transparent;
+    text-color:                 @foreground;
+}
+
+window {
+    width:                      780px;
+    height:                     480px;
+    border:                     1.5px;
+    border-color:               @selected-normal-background;
+    border-radius:              24px;
+    background-color:           rgba(13, 17, 23, 0.94);
+    padding:                    18px;
+    anchor:                     center;
+    location:                   center;
+}
+
+mainbox {
+    orientation:                vertical;
+    spacing:                    14px;
+    children:                   [ header-island, listview, footer-island ];
+}
+
+/* ==============================================================================
+   ISLA HEADER: CÁPSULA ESTILO NOTCH POCKET
+   ============================================================================== */
+header-island {
+    orientation:                horizontal;
+    spacing:                    12px;
+    expand:                     false;
+    children:                   [ pocket-badge, inputbar ];
+}
+
+pocket-badge {
+    expand:                     false;
+    str:                        "󰣇 POCKET APPS";
+    text-color:                 @selected-normal-background;
+    font:                       "JetBrainsMono Nerd Font Bold 10";
+    padding:                    8px 14px;
+    border-radius:              14px;
+    background-color:           rgba(255, 255, 255, 0.06);
+    border:                     1px;
+    border-color:               rgba(255, 255, 255, 0.10);
+    vertical-align:             0.5;
+}
+
+inputbar {
+    background-color:           rgba(255, 255, 255, 0.05);
+    border-radius:              14px;
+    border:                     1px;
+    border-color:               rgba(255, 255, 255, 0.12);
+    padding:                    8px 14px;
+    spacing:                    10px;
+    expand:                     true;
+    children:                   [ prompt, entry ];
+}
+
+prompt {
+    text-color:                 @selected-normal-background;
+    font-size:                  11px;
+    vertical-align:             0.5;
+}
+
+entry {
+    text-color:                 @foreground;
+    placeholder:                "Buscar aplicaciones en Pocket Island...";
+    placeholder-color:          rgba(255, 255, 255, 0.35);
+    vertical-align:             0.5;
+}
+
+/* ==============================================================================
+   CUADRÍCULA GRID (5 COLUMNAS X 3 FILAS)
+   ============================================================================== */
+listview {
+    columns:                    5;
+    lines:                      3;
+    spacing:                    10px;
+    cycle:                      true;
+    dynamic:                    true;
+    scrollbar:                  false;
+    layout:                     vertical;
+    border:                     0px;
+    padding:                    6px 0px;
+}
+
+element {
+    orientation:                vertical;
+    spacing:                    8px;
+    padding:                    14px 8px;
+    border-radius:              16px;
+    background-color:           rgba(255, 255, 255, 0.04);
+    border:                     1px;
+    border-color:               rgba(255, 255, 255, 0.08);
+    cursor:                     pointer;
+    children:                   [ element-icon, element-text ];
+}
+
+element normal.normal {
+    background-color:           rgba(255, 255, 255, 0.04);
+    border-color:               rgba(255, 255, 255, 0.08);
+    text-color:                 @foreground;
+}
+
+element alternate.normal {
+    background-color:           rgba(255, 255, 255, 0.04);
+    border-color:               rgba(255, 255, 255, 0.08);
+    text-color:                 @foreground;
+}
+
+element selected.normal {
+    background-color:           rgba(224, 86, 253, 0.22);
+    border:                     1.5px;
+    border-color:               #e056fd;
+    text-color:                 #ffffff;
+}
+
+element normal.urgent, element alternate.urgent {
+    background-color:           rgba(255, 71, 87, 0.15);
+    border-color:               #ff4757;
+    text-color:                 #ff4757;
+}
+
+element selected.urgent {
+    background-color:           rgba(255, 71, 87, 0.35);
+    border-color:               #ff4757;
+    text-color:                 #ffffff;
+}
+
+element normal.active, element alternate.active {
+    background-color:           rgba(0, 242, 254, 0.15);
+    border-color:               #00f2fe;
+    text-color:                 #00f2fe;
+}
+
+element selected.active {
+    background-color:           rgba(0, 242, 254, 0.30);
+    border-color:               #00f2fe;
+    text-color:                 #ffffff;
+}
+
+element-icon {
+    size:                       48px;
+    horizontal-align:           0.5;
+    vertical-align:             0.5;
+    background-color:           transparent;
+    cursor:                     pointer;
+}
+
+element-text {
+    horizontal-align:           0.5;
+    vertical-align:             0.5;
+    text-color:                 inherit;
+    background-color:           transparent;
+    font:                       "JetBrainsMono Nerd Font Medium 9.5";
+    cursor:                     pointer;
+}
+
+/* ==============================================================================
+   FOOTER ISLA POCKET
+   ============================================================================== */
+footer-island {
+    orientation:                horizontal;
+    expand:                     false;
+    padding:                    4px 8px 0px 8px;
+    children:                   [ footer-status, dummy, footer-hints ];
+}
+
+dummy {
+    expand:                     true;
+}
+
+footer-status {
+    expand:                     false;
+    str:                        "⚡ Pocket Island Active";
+    text-color:                 rgba(255, 255, 255, 0.45);
+    font:                       "JetBrainsMono Nerd Font 9";
+}
+
+footer-hints {
+    expand:                     false;
+    str:                        "Enter: Lanzar  •  Esc: Salir";
+    text-color:                 rgba(255, 255, 255, 0.35);
+    font:                       "JetBrainsMono Nerd Font 9";
+}

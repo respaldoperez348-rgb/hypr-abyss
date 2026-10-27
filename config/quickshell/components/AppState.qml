@@ -80,6 +80,7 @@ QtObject {
             case "track":
                 root.currentTrack = msg.track;
                 root.position = 0.0;
+                if (msg.track && msg.track.durationSec) root.duration = msg.track.durationSec;
                 break;
             case "current_favorite_status":
                 root.isCurrentFavorite = !!msg.isFavorite;

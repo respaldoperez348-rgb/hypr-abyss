@@ -1,5 +1,41 @@
 [
   {
+    "artist": "Nek Filippo Neviani",
+    "duration": "03:49",
+    "durationSec": 229,
+    "id": "DAIxrSvq6bo",
+    "thumbnail": "https://i.ytimg.com/vi/DAIxrSvq6bo/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCCfkoeiT7aI9YBpmD8Udno95pRUQ",
+    "title": "Nek - Laura no està",
+    "url": "https://www.youtube.com/watch?v=DAIxrSvq6bo"
+  },
+  {
+    "artist": "Juan Luis Guerra 4.40",
+    "duration": "04:06",
+    "durationSec": 246,
+    "id": "RksYXExb0d0",
+    "thumbnail": "https://i.ytimg.com/vi/RksYXExb0d0/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDRfueDuAlML_mfrSsEgiS3IAwsOg",
+    "title": "Vale la Pena (Live)",
+    "url": "https://www.youtube.com/watch?v=RksYXExb0d0"
+  },
+  {
+    "artist": "Christian Meier",
+    "duration": "03:32",
+    "durationSec": 212,
+    "id": "AoTx4aloh6Y",
+    "thumbnail": "https://i.ytimg.com/vi/AoTx4aloh6Y/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCsIW3PoXqS-NkfahVXNOhnWTBIUQ",
+    "title": "La Pena",
+    "url": "https://www.youtube.com/watch?v=AoTx4aloh6Y"
+  },
+  {
+    "artist": "Christian Meier",
+    "duration": "04:05",
+    "durationSec": 245,
+    "id": "aj22Jf2V090",
+    "thumbnail": "https://i.ytimg.com/vi/aj22Jf2V090/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAm9JIWuhCpqNSHuI5XaZXnuYV5Ow",
+    "title": "Me Recuerdas a Alguien",
+    "url": "https://www.youtube.com/watch?v=aj22Jf2V090"
+  },
+  {
     "artist": "Pedro Suárez Vértiz Oficial",
     "duration": "03:56",
     "durationSec": 236,

@@ -19,7 +19,7 @@ Item {
     property bool isOpen: false
     property string barStyle: "deck"
     signal closeRequested()
-    property alias card: panelCard
+    readonly property Item card: (root.barStyle === "deck") ? coverFlowStage : (root.barStyle === "notch" ? pocketWallpaperCard : panelCard)
     readonly property bool isAnimating: slideYAnim.running
 
     implicitWidth: 880
@@ -174,7 +174,7 @@ Item {
     // 0. Clic exterior para cerrar (completamente transparente, sin tapar la pantalla)
     MouseArea {
         anchors.fill: parent
-        visible: root.isOpen && root.barStyle === "deck"
+        visible: root.isOpen && (root.barStyle === "deck" || root.barStyle === "notch")
         onClicked: root.closeRequested()
     }
 
@@ -189,6 +189,11 @@ Item {
         Keys.onRightPressed: {
             if (root.barStyle === "deck") {
                 if (coverFlowView.count > 0) coverFlowView.incrementCurrentIndex();
+            } else if (root.barStyle === "notch") {
+                if (pocketWallpaperList.count > 0) {
+                    pocketWallpaperList.currentIndex = (pocketWallpaperList.currentIndex + 1) % pocketWallpaperList.count;
+                    pocketWallpaperList.positionViewAtIndex(pocketWallpaperList.currentIndex, ListView.Contain);
+                }
             } else {
                 if (wallpaperList.count > 0) {
                     wallpaperList.currentIndex = (wallpaperList.currentIndex + 1) % wallpaperList.count;
@@ -202,6 +207,11 @@ Item {
         Keys.onLeftPressed: {
             if (root.barStyle === "deck") {
                 if (coverFlowView.count > 0) coverFlowView.decrementCurrentIndex();
+            } else if (root.barStyle === "notch") {
+                if (pocketWallpaperList.count > 0) {
+                    pocketWallpaperList.currentIndex = (pocketWallpaperList.currentIndex - 1 + pocketWallpaperList.count) % pocketWallpaperList.count;
+                    pocketWallpaperList.positionViewAtIndex(pocketWallpaperList.currentIndex, ListView.Contain);
+                }
             } else {
                 if (wallpaperList.count > 0) {
                     wallpaperList.currentIndex = (wallpaperList.currentIndex - 1 + wallpaperList.count) % wallpaperList.count;
@@ -216,6 +226,10 @@ Item {
             if (root.barStyle === "deck") {
                 if (coverFlowView.count > 0 && coverFlowView.currentIndex >= 0 && coverFlowView.currentIndex < coverFlowView.count) {
                     root.applyWallpaper(root.allWallpapers[coverFlowView.currentIndex].path);
+                }
+            } else if (root.barStyle === "notch") {
+                if (pocketWallpaperList.count > 0 && pocketWallpaperList.currentIndex >= 0 && pocketWallpaperList.currentIndex < pocketWallpaperList.count) {
+                    root.applyWallpaper(root.filteredWallpapers[pocketWallpaperList.currentIndex].path);
                 }
             } else {
                 if (wallpaperList.count > 0 && wallpaperList.currentIndex >= 0 && wallpaperList.currentIndex < wallpaperList.count) {
@@ -1308,6 +1322,315 @@ Item {
                 onClicked: {
                     if (coverFlowView.count > 0 && coverFlowView.currentIndex >= 0 && coverFlowView.currentIndex < coverFlowView.count) {
                         root.applyWallpaper(root.allWallpapers[coverFlowView.currentIndex].path);
+                    }
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // Contenedor Visual Top-Down Pocket Island (Modo Notch - Barra 3)
+    // ==========================================
+    Rectangle {
+        id: pocketWallpaperCard
+        width: Math.min(940, root.width - 40)
+        height: 250
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: root.isOpen ? 14 : -320
+        visible: root.barStyle === "notch"
+
+        radius: 22
+        color: "#f20c1017"
+        border.width: 1.5
+        border.color: root.theme ? root.theme.borderHover : "#00f2fe"
+
+        opacity: root.isOpen ? 1.0 : 0.0
+        scale: root.isOpen ? 1.0 : 0.90
+
+        Behavior on anchors.topMargin {
+            NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+        }
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
+        }
+        Behavior on scale {
+            NumberAnimation { duration: 220; easing.type: Easing.OutQuad }
+        }
+
+        // Resplandor exterior suave
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -4
+            radius: parent.radius + 3
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(0, 242, 254, 0.25)
+            z: -1
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 14
+            spacing: 10
+
+            // Header Píldora Notch + Filtros
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                // Chip distintivo Pocket
+                Rectangle {
+                    Layout.preferredHeight: 32
+                    Layout.preferredWidth: 230
+                    radius: 12
+                    color: Qt.rgba(0, 242, 254, 0.12)
+                    border.width: 1
+                    border.color: Qt.rgba(0, 242, 254, 0.35)
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Text {
+                            text: "󰸉"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 13
+                            color: "#00f2fe"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            text: "POCKET WALLPAPERS"
+                            font.family: "JetBrainsMono Nerd Font Bold"
+                            font.pixelSize: 11
+                            color: "#ffffff"
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                }
+
+                // Filtro: Todos
+                Rectangle {
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 70
+                    radius: 10
+                    color: root.activeFilter === "all" ? Qt.rgba(224, 86, 253, 0.25) : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: root.activeFilter === "all" ? "#e056fd" : Qt.rgba(255, 255, 255, 0.10)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Todos"
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 10
+                        font.bold: root.activeFilter === "all"
+                        color: root.activeFilter === "all" ? "#ffffff" : Qt.rgba(255, 255, 255, 0.7)
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.activeFilter = "all"
+                    }
+                }
+
+                // Filtro: Estáticos
+                Rectangle {
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 80
+                    radius: 10
+                    color: root.activeFilter === "static" ? Qt.rgba(224, 86, 253, 0.25) : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: root.activeFilter === "static" ? "#e056fd" : Qt.rgba(255, 255, 255, 0.10)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Estáticos"
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 10
+                        font.bold: root.activeFilter === "static"
+                        color: root.activeFilter === "static" ? "#ffffff" : Qt.rgba(255, 255, 255, 0.7)
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.activeFilter = "static"
+                    }
+                }
+
+                // Filtro: Animados
+                Rectangle {
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 85
+                    radius: 10
+                    color: root.activeFilter === "animated" ? Qt.rgba(224, 86, 253, 0.25) : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: root.activeFilter === "animated" ? "#e056fd" : Qt.rgba(255, 255, 255, 0.10)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Animados"
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 10
+                        font.bold: root.activeFilter === "animated"
+                        color: root.activeFilter === "animated" ? "#ffffff" : Qt.rgba(255, 255, 255, 0.7)
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.activeFilter = "animated"
+                    }
+                }
+
+                // Botón Aleatorio
+                Rectangle {
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 42
+                    radius: 10
+                    color: Qt.rgba(255, 255, 255, 0.06)
+                    border.width: 1
+                    border.color: Qt.rgba(255, 255, 255, 0.12)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "🎲"
+                        font.pixelSize: 12
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.applyRandom()
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                // Botón Cerrar ✕
+                Rectangle {
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 30
+                    radius: 15
+                    color: closeHoverPocket.containsMouse ? Qt.rgba(255, 71, 87, 0.25) : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: closeHoverPocket.containsMouse ? "#ff4757" : Qt.rgba(255, 255, 255, 0.10)
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 11
+                        color: closeHoverPocket.containsMouse ? "#ff4757" : Qt.rgba(255, 255, 255, 0.7)
+                    }
+
+                    MouseArea {
+                        id: closeHoverPocket
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.closeRequested()
+                    }
+                }
+            }
+
+            // Lista Horizontal de Wallpapers estilo Pocket
+            ListView {
+                id: pocketWallpaperList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                orientation: ListView.Horizontal
+                spacing: 12
+                clip: true
+                model: root.filteredWallpapers
+
+                delegate: Item {
+                    id: pCardItem
+                    width: 155
+                    height: 145
+                    readonly property var itemData: modelData
+                    readonly property bool isSelected: root.selectedPath === itemData.path
+                    readonly property bool isJustApplied: root.justAppliedPath === itemData.path
+                    readonly property bool isHovered: pCardMouse.containsMouse
+                    readonly property bool isCurrent: pocketWallpaperList.currentIndex === index
+
+                    y: (pCardItem.isHovered || pCardItem.isCurrent) ? -4 : 0
+                    scale: (pCardItem.isHovered || pCardItem.isCurrent) ? 1.04 : 1.0
+                    Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                    Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 14
+                        color: "#161b22"
+                        clip: true
+
+                        border.width: (pCardItem.isSelected || pCardItem.isJustApplied) ? 2.5 : ((pCardItem.isHovered || pCardItem.isCurrent) ? 1.5 : 1)
+                        border.color: pCardItem.isJustApplied ? "#2ed573" : (pCardItem.isSelected ? "#00f2fe" : ((pCardItem.isHovered || pCardItem.isCurrent) ? "#e056fd" : Qt.rgba(255, 255, 255, 0.12)))
+
+                        Image {
+                            anchors.fill: parent
+                            source: itemData.path
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            cache: true
+                        }
+
+                        // Gradiente inferior con título
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 38
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 1.0; color: "#f00c1017" }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                anchors.verticalCenterOffset: 4
+                                width: parent.width - 12
+                                text: itemData.name
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                font.bold: true
+                                color: "#ffffff"
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+
+                        // Badge activo
+                        Rectangle {
+                            visible: pCardItem.isSelected || pCardItem.isJustApplied
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 6
+                            width: 20
+                            height: 20
+                            radius: 10
+                            color: pCardItem.isJustApplied ? "#2ed573" : "#00f2fe"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "✓"
+                                font.bold: true
+                                font.pixelSize: 11
+                                color: "#0c1017"
+                            }
+                        }
+
+                        MouseArea {
+                            id: pCardMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                pocketWallpaperList.currentIndex = index;
+                                root.applyWallpaper(itemData.path);
+                            }
+                        }
                     }
                 }
             }

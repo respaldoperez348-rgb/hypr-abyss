@@ -24,7 +24,7 @@ Item {
     property bool isOpen: false
     property string barStyle: "deck"
     signal closeRequested()
-    readonly property Item card: (root.barStyle === "deck") ? squircleDeck : dialogCard
+    readonly property Item card: (root.barStyle === "deck") ? squircleDeck : (root.barStyle === "notch" ? pocketPowerCard : dialogCard)
 
     // Estado del elemento enfocado por teclado (0 a 4)
     property int selectedIndex: 3 // Por defecto en Apagar o Bloquear
@@ -965,6 +965,227 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }
+            }
+        }
+    }
+
+    // ==========================================
+    // 4. Cápsula Dropdown Pocket Island (Modo Notch - Barra 3)
+    // ==========================================
+    Rectangle {
+        id: pocketPowerCard
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: root.isOpen ? 14 : -180
+        width: 580
+        height: root.pendingConfirmIndex !== -1 ? 138 : 96
+        radius: 24
+        visible: root.barStyle === "notch"
+
+        // Fondo Frosted Glass Isla Pocket
+        color: "#f00c1017"
+        border.width: 1.5
+        border.color: root.pendingConfirmIndex !== -1
+                      ? root.actions[root.pendingConfirmIndex].color
+                      : (root.theme ? root.theme.borderHover : "#e056fd")
+
+        opacity: root.isOpen ? 1.0 : 0.0
+        scale: root.isOpen ? 1.0 : 0.90
+
+        Behavior on anchors.topMargin {
+            NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+        }
+        Behavior on opacity {
+            NumberAnimation { duration: 200; easing.type: Easing.OutQuad }
+        }
+        Behavior on scale {
+            NumberAnimation { duration: 220; easing.type: Easing.OutQuad }
+        }
+        Behavior on height {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
+        Behavior on border.color {
+            ColorAnimation { duration: 180 }
+        }
+
+        // Resplandor exterior suave Pocket
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -4
+            radius: parent.radius + 3
+            color: "transparent"
+            border.width: 1
+            border.color: root.pendingConfirmIndex !== -1
+                          ? Qt.rgba(root.actions[root.pendingConfirmIndex].color.r, root.actions[root.pendingConfirmIndex].color.g, root.actions[root.pendingConfirmIndex].color.b, 0.4)
+                          : Qt.rgba(224, 86, 253, 0.25)
+            z: -1
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 8
+
+            // Header Píldora Pocket Notch
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 8
+
+                Rectangle {
+                    width: 8
+                    height: 8
+                    radius: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: root.pendingConfirmIndex !== -1 ? "#ff5555" : "#e056fd"
+                }
+
+                Text {
+                    text: root.pendingConfirmIndex !== -1 
+                          ? ("⚠️ CONFIRMAR: " + root.actions[root.pendingConfirmIndex].title.toUpperCase())
+                          : "⚡ POCKET ISLAND // POWER HUB"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 10
+                    font.bold: true
+                    color: root.pendingConfirmIndex !== -1 ? "#ff5555" : "#e056fd"
+                }
+            }
+
+            // Fila de 5 Botones Pocket
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 10
+
+                Repeater {
+                    model: [0, 4, 2, 1, 3] // Lock [1], Suspend [5], Reboot [3], Logout [2], PowerOff [4]
+
+                    delegate: Rectangle {
+                        id: pocketBtn
+                        required property int modelData
+                        required property int index
+
+                        readonly property var act: root.actions[modelData]
+                        readonly property bool isSelected: root.selectedIndex === modelData
+                        readonly property bool isHovered: pocketMouse.containsMouse
+                        readonly property bool isPending: root.pendingConfirmIndex === modelData
+
+                        width: 98
+                        height: 48
+                        radius: 14
+
+                        y: (isHovered || isSelected) ? -3 : 0
+                        scale: (isHovered || isSelected) ? 1.05 : 1.0
+                        Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+                        Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+
+                        color: isPending 
+                               ? Qt.rgba(act.color.r, act.color.g, act.color.b, 0.35)
+                               : ((isHovered || isSelected) ? Qt.rgba(act.color.r, act.color.g, act.color.b, 0.22) : Qt.rgba(255, 255, 255, 0.05))
+
+                        border.width: (isPending || isSelected || isHovered) ? 1.8 : 1
+                        border.color: (isPending || isSelected || isHovered) ? act.color : Qt.rgba(255, 255, 255, 0.12)
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            Canvas {
+                                width: 20
+                                height: 20
+                                anchors.verticalCenter: parent.verticalCenter
+                                property color iconCol: (pocketBtn.isHovered || pocketBtn.isSelected || pocketBtn.isPending) ? pocketBtn.act.color : Qt.rgba(255, 255, 255, 0.8)
+                                onIconColChanged: requestPaint()
+                                Component.onCompleted: requestPaint()
+
+                                onPaint: {
+                                    var ctx = getContext("2d");
+                                    ctx.reset();
+                                    ctx.strokeStyle = iconCol;
+                                    ctx.fillStyle = iconCol;
+                                    ctx.lineWidth = 1.6;
+                                    ctx.lineCap = "round";
+                                    ctx.lineJoin = "round";
+
+                                    var type = pocketBtn.act.iconType;
+                                    if (type === "lock") {
+                                        ctx.beginPath();
+                                        ctx.arc(10, 6.5, 3.5, Math.PI, 0, false);
+                                        ctx.stroke();
+                                        ctx.strokeRect(5, 6.5, 10, 8.5);
+                                        ctx.beginPath();
+                                        ctx.arc(10, 10.5, 1.2, 0, Math.PI * 2);
+                                        ctx.fill();
+                                    } else if (type === "suspend") {
+                                        ctx.beginPath();
+                                        ctx.arc(10, 10, 5.5, 0.7 * Math.PI, 1.8 * Math.PI, false);
+                                        ctx.stroke();
+                                    } else if (type === "reboot") {
+                                        ctx.beginPath();
+                                        ctx.arc(10, 10, 6, 0.2 * Math.PI, 1.7 * Math.PI, false);
+                                        ctx.stroke();
+                                        ctx.beginPath();
+                                        ctx.moveTo(14, 5); ctx.lineTo(16, 8); ctx.lineTo(12, 8.5);
+                                        ctx.fill();
+                                    } else if (type === "logout") {
+                                        ctx.beginPath();
+                                        ctx.moveTo(10, 4); ctx.lineTo(5, 4); ctx.lineTo(5, 16); ctx.lineTo(10, 16);
+                                        ctx.stroke();
+                                        ctx.beginPath();
+                                        ctx.moveTo(8, 10); ctx.lineTo(15, 10);
+                                        ctx.stroke();
+                                        ctx.beginPath();
+                                        ctx.moveTo(12, 7); ctx.lineTo(15, 10); ctx.lineTo(12, 13);
+                                        ctx.stroke();
+                                    } else if (type === "power") {
+                                        ctx.beginPath();
+                                        ctx.arc(10, 10.5, 5.5, -0.28 * Math.PI, 1.28 * Math.PI, false);
+                                        ctx.stroke();
+                                        ctx.beginPath();
+                                        ctx.moveTo(10, 3.5); ctx.lineTo(10, 9.5);
+                                        ctx.stroke();
+                                    }
+                                }
+                            }
+
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    text: pocketBtn.act.title
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: (pocketBtn.isHovered || pocketBtn.isSelected) ? "#ffffff" : Qt.rgba(255, 255, 255, 0.85)
+                                }
+                                Text {
+                                    text: "[" + pocketBtn.act.key + "]"
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.pixelSize: 8
+                                    color: pocketBtn.act.color
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: pocketMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                root.selectedIndex = pocketBtn.modelData;
+                                root.executeAction(pocketBtn.modelData);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Barra de confirmación animada si pending
+            Text {
+                visible: root.pendingConfirmIndex !== -1
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Presiona Enter o haz clic de nuevo para ejecutar • Esc para cancelar"
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 9
+                color: Qt.rgba(255, 255, 255, 0.70)
             }
         }
     }

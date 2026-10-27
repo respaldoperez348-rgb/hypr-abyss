@@ -27,33 +27,46 @@ def link_file(src: Path, dst: Path):
 
 def sync_environment(style):
     home = Path.home()
-    is_dev = (style == "deck")
+    if style == "deck":
+        rofi_mode = "config-dev.rasi"
+        ff_mode = "config-dev.jsonc"
+        gtk_css_mode = "gtk-dev.css"
+        rounding = 8
+        border_sz = 2
+    elif style == "notch":
+        rofi_mode = "config-pocket.rasi"
+        ff_mode = "config-pocket.jsonc"
+        gtk_css_mode = "gtk-pocket.css"
+        rounding = 20
+        border_sz = 2
+    else:
+        rofi_mode = "config-daily.rasi"
+        ff_mode = "config-daily.jsonc"
+        gtk_css_mode = "gtk-daily.css"
+        rounding = 16
+        border_sz = 1
     
     # 1. Rofi Launcher Switch
-    rofi_mode = "config-dev.rasi" if is_dev else "config-daily.rasi"
     link_file(home / ".config" / "rofi" / rofi_mode, home / ".config" / "rofi" / "config.rasi")
 
     # 2. Fastfetch Specs Switch
-    ff_mode = "config-dev.jsonc" if is_dev else "config-daily.jsonc"
     link_file(home / ".config" / "fastfetch" / ff_mode, home / ".config" / "fastfetch" / "config.jsonc")
 
     # 3. GTK 3 CSS Switch
-    gtk_css_mode = "gtk-dev.css" if is_dev else "gtk-daily.css"
     link_file(home / ".config" / "gtk-3.0" / gtk_css_mode, home / ".config" / "gtk-3.0" / "gtk.css")
 
     # 4. Hyprland Borders & Rounding (vía Hyprland Lua eval)
-    rounding = 8 if is_dev else 16
-    border_sz = 2 if is_dev else 1
     os.system(f"hyprctl eval 'hl.config({{ decoration = {{ rounding = {rounding} }}, general = {{ border_size = {border_sz} }} }})' >/dev/null 2>&1")
 
 def set_style(style, from_quickshell=False):
     if style not in ["deck", "island", "notch"]:
         style = "deck"
     
-    # Si se pide deck o island, sincronizar con el orquestador maestro setup_manager
+    # Sincronizar con el orquestador maestro setup_manager
     setup_mgr = Path.home() / ".config" / "quickshell" / "scripts" / "setup_manager.py"
-    if style in ["deck", "island"] and setup_mgr.exists():
-        mode = "dev" if style == "deck" else "daily"
+    if setup_mgr.exists():
+        mode_map = {"deck": "dev", "island": "daily", "notch": "pocket"}
+        mode = mode_map.get(style, "dev")
         qs_flag = ["--from-quickshell"] if from_quickshell else []
         os.system(f"python3 {setup_mgr} switch {mode} {' '.join(qs_flag)} >/dev/null 2>&1")
     else:

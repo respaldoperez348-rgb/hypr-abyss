@@ -110,7 +110,7 @@ if [[ -n "$bat_path" ]]; then
         bat_detail="Cargando"
     elif [[ "$bat_status" == "Discharging" ]]; then
         # Fallback a upower si power_now no estuviera disponible
-        up_time=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 2>/dev/null | awk -F: '/time to empty/ {gsub(/^[ \t]+/, "", $2); print $2; exit}')
+        up_time=$(timeout 0.3s upower -i /org/freedesktop/UPower/devices/battery_BAT0 2>/dev/null | awk -F: '/time to empty/ {gsub(/^[ \t]+/, "", $2); print $2; exit}')
         if [[ -n "$up_time" ]]; then
             bat_detail="${up_time} restantes"
         else
@@ -125,19 +125,19 @@ wifi_ssid="Disconnected"
 if grep -q "wlp" /proc/net/wireless 2>/dev/null; then
     raw_sig=$(awk '/wlp/ {gsub(/\./, ""); print int($3)}' /proc/net/wireless 2>/dev/null)
     wifi_signal=$(( raw_sig > 100 ? 100 : raw_sig ))
-    wifi_ssid=$(iwgetid -r 2>/dev/null)
+    wifi_ssid=$(timeout 0.3s iwgetid -r 2>/dev/null)
     if [[ -z "$wifi_ssid" ]]; then
-        wifi_ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | awk -F: '/^yes:/ || /^sí:/ {print $2; exit}')
+        wifi_ssid=$(timeout 0.3s nmcli -t -f active,ssid dev wifi 2>/dev/null | awk -F: '/^yes:/ || /^sí:/ {print $2; exit}')
     fi
     wifi_ssid=${wifi_ssid:-"Connected"}
 fi
 
 # 4. Bluetooth (Rápido vía bluetoothctl)
 bt_powered=false
-if bluetoothctl show 2>/dev/null | grep -q "Powered: yes"; then
+if timeout 0.3s bluetoothctl show 2>/dev/null | grep -q "Powered: yes"; then
     bt_powered=true
 fi
-bt_device=$(bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3-)
+bt_device=$(timeout 0.3s bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3-)
 bt_device=${bt_device:-""}
 
 # 5. Volumen y Brillo (para OSD reactivo en Dynamic Island)

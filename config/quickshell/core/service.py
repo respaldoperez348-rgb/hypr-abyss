@@ -106,6 +106,11 @@ class MPVController:
         self.last_progress_emit = 0
 
     def start_mpv(self):
+        try:
+            subprocess.run(["pkill", "-9", "-f", f"input-ipc-server={self.sock_path}"], stderr=subprocess.DEVNULL)
+            subprocess.run(["pkill", "-9", "-f", "title=Aura Music"], stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
         if os.path.exists(self.sock_path):
             try:
                 os.remove(self.sock_path)
@@ -144,8 +149,7 @@ class MPVController:
             self.send_command(["observe_property", 1, "time-pos"])
             self.send_command(["observe_property", 2, "duration"])
             self.send_command(["observe_property", 3, "pause"])
-            self.send_command(["observe_property", 4, "eof-reached"])
-            self.send_command(["observe_property", 5, "volume"])
+            self.send_command(["observe_property", 4, "volume"])
 
             # Start background reader thread
             threading.Thread(target=self._reader_loop, daemon=True).start()
@@ -183,7 +187,7 @@ class MPVController:
                     if now - self.last_progress_emit >= 0.25:
                         self.last_progress_emit = now
                         emit("progress", pos=round(self.time_pos, 1), duration=round(self.duration, 1))
-                elif name == "duration" and val is not None:
+                elif name == "duration" and val is not None and float(val) > 0:
                     self.duration = float(val)
                     emit("duration", duration=round(self.duration, 1))
                 elif name == "pause":
@@ -192,13 +196,10 @@ class MPVController:
                 elif name == "volume" and val is not None:
                     self.volume = int(val)
                     emit("volume", volume=self.volume)
-                elif name == "eof-reached" and val is True:
-                    if self.on_eof_callback:
-                        self.on_eof_callback()
             elif event == "end-file":
                 reason = data.get("reason")
-                if reason == "eof" and self.on_eof_callback:
-                    self.on_eof_callback()
+                if reason in ("eof", "error") and self.on_eof_callback:
+                    threading.Thread(target=self.on_eof_callback, daemon=True).start()
         except Exception:
             pass
 
@@ -262,13 +263,25 @@ class AuraService:
         self.favorites = FavoritesManager(FAVORITES_FILE)
         self.mpv = MPVController(MPV_SOCK)
         self.mpv.on_eof_callback = self.handle_auto_next
-        self.queue = list(self.favorites.items[:20]) if self.favorites.items else []
+        self.queue = list(self.favorites.items) if self.favorites.items else []
         self.current_index = 0
         self.current_track = self.queue[0] if self.queue else None
         self.shuffle = False
         self.repeat_mode = "none" # "none", "one", "all"
+        self._last_auto_next = 0
 
     def start(self):
+        import signal, atexit
+        def _cleanup(*args):
+            self.mpv.quit()
+        atexit.register(_cleanup)
+        try:
+            signal.signal(signal.SIGTERM, _cleanup)
+            signal.signal(signal.SIGINT, _cleanup)
+            signal.signal(signal.SIGHUP, _cleanup)
+        except Exception:
+            pass
+
         self.mpv.start_mpv()
         
         # Initial state emit
@@ -353,22 +366,33 @@ class AuraService:
         if not url and track.get("id"):
             url = f"https://www.youtube.com/watch?v={track['id']}"
 
-        # If track is not in queue, insert it
-        if not any(t.get("id") == track.get("id") for t in self.queue):
+        dur = float(track.get("durationSec") or 0)
+        self.mpv.duration = dur
+        self.mpv.time_pos = 0.0
+
+        # Synchronize queue index
+        found = False
+        for i, t in enumerate(self.queue):
+            if (t.get("id") and t.get("id") == track.get("id")) or (t.get("url") and t.get("url") == url):
+                self.current_index = i
+                found = True
+                break
+        if not found:
             self.queue.insert(self.current_index + 1, track)
             self.current_index += 1
             emit("queue", queue=self.queue, index=self.current_index)
         else:
-            for i, t in enumerate(self.queue):
-                if t.get("id") == track.get("id"):
-                    self.current_index = i
-                    break
+            emit("queue", queue=self.queue, index=self.current_index)
 
         emit("track", track=self.current_track, index=self.current_index)
+        if dur > 0:
+            emit("duration", duration=round(dur, 1))
+        emit("progress", pos=0.0, duration=round(dur, 1))
+
         is_fav = self.favorites.is_favorite(track.get("id"))
         emit("current_favorite_status", isFavorite=is_fav)
 
-        # Write metadata to RAM for MediaIsland (Dynamic Island) sync
+        # Write metadata to RAM for MediaIsland (Dynamic Island / Notch) sync
         try:
             with open("/dev/shm/aura_now_playing.json", "w", encoding="utf-8") as f:
                 json.dump({
@@ -399,7 +423,7 @@ class AuraService:
         else:
             next_idx = self.current_index + 1
             if next_idx >= len(self.queue):
-                if self.repeat_mode == "all":
+                if self.repeat_mode == "all" or self.repeat_mode == "none":
                     next_idx = 0
                 else:
                     return
@@ -421,6 +445,10 @@ class AuraService:
         self.play_index(prev_idx)
 
     def handle_auto_next(self):
+        now = time.time()
+        if now - getattr(self, "_last_auto_next", 0) < 1.0:
+            return
+        self._last_auto_next = now
         self.play_next()
 
     def async_search(self, query):

@@ -1,0 +1,72 @@
+/* ==============================================================================
+ * Pocket Island Theme for Thunar (GTK 3)
+ * Dynamically themed with Pywal wallpaper colors + Pocket aesthetic
+ * ============================================================================== */
+
+@import url("colors-wal.css");
+
+window.thunar,
+.thunar-window {
+    background-color: @wal_bg;
+    color: @wal_fg;
+    border-radius: 16px;
+}
+
+/* Área de contenido y archivos */
+window.thunar .view,
+window.thunar .standard-view,
+window.thunar treeview,
+window.thunar iconview,
+window.thunar scrolledwindow {
+    background-color: shade(@wal_bg, 1.05);
+    color: @wal_fg;
+}
+
+/* Barra lateral estilo isla redondeada */
+window.thunar .sidebar,
+window.thunar .sidebar treeview {
+    background-color: shade(@wal_bg, 0.95);
+    border-right: 1px solid alpha(@wal_fg, 0.08);
+    color: alpha(@wal_fg, 0.85);
+}
+
+window.thunar .sidebar:selected,
+window.thunar .sidebar treeview:selected {
+    background-color: alpha(@wal_accent, 0.28);
+    color: @wal_accent;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+/* Barra superior, menú y barra de herramientas */
+window.thunar headerbar,
+window.thunar toolbar,
+window.thunar menubar {
+    background-color: shade(@wal_bg, 0.90);
+    border-bottom: 1px solid alpha(@wal_fg, 0.08);
+    color: @wal_fg;
+}
+
+/* Barra de ruta / buscador estilo píldora */
+window.thunar entry,
+window.thunar .path-bar {
+    background-color: alpha(@wal_fg, 0.06);
+    color: @wal_fg;
+    border: 1px solid alpha(@wal_accent, 0.35);
+    border-radius: 12px;
+    padding: 4px 10px;
+}
+
+/* Botones con curvatura pocket */
+window.thunar button {
+    border-radius: 12px;
+    border: 1px solid alpha(@wal_fg, 0.08);
+    background-color: alpha(@wal_fg, 0.05);
+    color: @wal_fg;
+    transition: all 180ms ease;
+}
+
+window.thunar button:hover {
+    background-color: alpha(@wal_accent, 0.20);
+    border-color: @wal_accent;
+}
